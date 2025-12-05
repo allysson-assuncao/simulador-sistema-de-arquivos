@@ -5,21 +5,18 @@ Classe que contém os comandos e seu comportamentos. Sem atributos, apenas compo
  */
 public class Comandos {
 
-
-    public void cd(){
-        System.out.println("entrando no diretorio. ");
+    /*
+    Todo comando deve ser do tipo object, receber parâmetros genéricos e ter um retorno, mesmo que seja nulo
+     */
+    public Object cd(String... strings) {
+        System.out.println("Entrando no diretório X");
+        return null;
     }
 
-    //Mata terminal
-    public void kill(){
-        System.out.println("Obrigado por usar o nosso terminal (:");
+    public Object kill(String... strings) {
+        System.out.println("Matando terminal. ");
         System.exit(0);
+        return null;
     }
-
-
-
-
-
-
 
 }

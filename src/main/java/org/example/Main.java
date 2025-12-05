@@ -4,7 +4,7 @@ public class Main {
 
     public static void main(String[] args) {
 
-        //Iniciando sistema.
+        //Iniciando o Sistema de Arquivos.
         SistemaArquivo sistemaArquivo = new SistemaArquivo();
 
     }
