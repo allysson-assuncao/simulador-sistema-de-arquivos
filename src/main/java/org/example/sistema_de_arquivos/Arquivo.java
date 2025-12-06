@@ -8,9 +8,16 @@ public class Arquivo extends NoSistema {
         this.conteudo = new StringBuilder();
     }
 
-    public void appendConteudo(String texto) { this.conteudo.append(texto).append("\n"); }
-    public String getConteudo() { return conteudo.toString(); }
+    public void appendConteudo(String texto) {
+        this.conteudo.append(texto).append("\n");
+    }
+
+    public String getConteudo() {
+        return conteudo.toString();
+    }
 
     @Override
-    public String getTipo() { return "ARQUIVO"; }
+    public String getTipo() {
+        return "ARQUIVO";
+    }
 }

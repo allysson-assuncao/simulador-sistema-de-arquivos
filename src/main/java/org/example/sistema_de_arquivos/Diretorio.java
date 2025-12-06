@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Diretorio extends NoSistema {
-    // Map para acesso rápido: get("nome") é O(1)
     private Map<String, NoSistema> filhos;
 
     public Diretorio(String nome, Diretorio pai) {

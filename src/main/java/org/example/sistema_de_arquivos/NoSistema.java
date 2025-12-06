@@ -12,6 +12,6 @@ public abstract class NoSistema {
     public String getNome() { return nome; }
     public Diretorio getPai() { return pai; }
 
-    // Método abstrato que será útil para o comando 'ls -l' ou 'stat' futuramente
+    // Método abstrato que para efetivar comandos como 'ls -l' ou 'stat' eventualmente
     public abstract String getTipo();
 }
