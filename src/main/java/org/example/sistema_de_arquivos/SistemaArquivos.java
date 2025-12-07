@@ -96,6 +96,31 @@ public class SistemaArquivos {
         }
     }
 
+    // LS
+    public String ls(String caminhoOpcional) {
+        try {
+            Diretorio alvo = diretorioAtual;
+            if (caminhoOpcional != null && !caminhoOpcional.isEmpty()) {
+                NoSistema no = resolverCaminho(caminhoOpcional);
+                if (no instanceof Diretorio) alvo = (Diretorio) no;
+                else return no.getNome(); // Se for arquivo, mostra só o nome
+            }
+
+            if (alvo.getFilhos().isEmpty()) return "";
+
+            StringBuilder saida = new StringBuilder();
+            for (NoSistema filho : alvo.getFilhos().values()) {
+                if (filho instanceof Diretorio) saida.append("[D] ");
+                else saida.append("[A] ");
+                saida.append(filho.getNome()).append("  ");
+            }
+            return saida.toString();
+
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
     // MKDIR (Suporta "mkdir pasta" ou "mkdir /a/b/pasta")
     public String mkdir(String caminho) {
         try {
@@ -136,31 +161,6 @@ public class SistemaArquivos {
         }
     }
 
-    // LS
-    public String ls(String caminhoOpcional) {
-        try {
-            Diretorio alvo = diretorioAtual;
-            if (caminhoOpcional != null && !caminhoOpcional.isEmpty()) {
-                NoSistema no = resolverCaminho(caminhoOpcional);
-                if (no instanceof Diretorio) alvo = (Diretorio) no;
-                else return no.getNome(); // Se for arquivo, mostra só o nome
-            }
-
-            if (alvo.getFilhos().isEmpty()) return "";
-
-            StringBuilder saida = new StringBuilder();
-            for (NoSistema filho : alvo.getFilhos().values()) {
-                if (filho instanceof Diretorio) saida.append("[D] ");
-                else saida.append("[A] ");
-                saida.append(filho.getNome()).append("  ");
-            }
-            return saida.toString();
-
-        } catch (Exception e) {
-            return e.getMessage();
-        }
-    }
-
     // RM (Remove arquivos ou diretórios vazios)
     public String rm(String caminho) {
         try {
@@ -182,6 +182,45 @@ public class SistemaArquivos {
 
         } catch (Exception e) {
             return "Erro ao remover: " + e.getMessage();
+        }
+    }
+
+    // TOUCH: Cria um arquivo vazio ou atualiza timestamp
+    public String touch(String caminho) {
+        try {
+            // Resolve o pai (diretório onde o arquivo ficará)
+            String nomeArquivo;
+            Diretorio paiAlvo;
+
+            int ultimaBarra = caminho.lastIndexOf('/');
+            if (ultimaBarra == -1) {
+                nomeArquivo = caminho;
+                paiAlvo = diretorioAtual;
+            } else {
+                String caminhoPai = caminho.substring(0, ultimaBarra);
+                nomeArquivo = caminho.substring(ultimaBarra + 1);
+                if (caminhoPai.isEmpty()) caminhoPai = "/";
+
+                NoSistema noPai = resolverCaminho(caminhoPai);
+                if (!(noPai instanceof Diretorio)) return "Erro: Caminho inválido.";
+                paiAlvo = (Diretorio) noPai;
+            }
+
+            // Verifica se já existe
+            NoSistema existente = paiAlvo.getFilho(nomeArquivo);
+            if (existente != null) {
+                if (existente instanceof Diretorio) return "Erro: Já existe um diretório com esse nome.";
+                // Simulando a atualização do timestamp
+                return "Arquivo '" + nomeArquivo + "' atualizado.";
+            }
+
+            // Criação do arquivo
+            Arquivo novoArq = new Arquivo(nomeArquivo, paiAlvo);
+            paiAlvo.adicionarFilho(novoArq);
+            return "Arquivo '" + nomeArquivo + "' criado.";
+
+        } catch (Exception e) {
+            return "Erro: " + e.getMessage();
         }
     }
 

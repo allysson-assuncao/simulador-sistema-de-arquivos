@@ -31,7 +31,7 @@ public class Comandos {
 
     // [ls <caminho> -modificadores]
     public void ls(SistemaArquivos fs, List<String> args) {
-        String alvo = args.isEmpty() ? null : args.get(0);
+        String alvo = args.isEmpty() ? null : args.getFirst();
         System.out.println(fs.ls(alvo));
     }
 
@@ -52,6 +52,15 @@ public class Comandos {
             return;
         }
         System.out.println(fs.rm(args.getFirst()));
+    }
+
+    // [touch <nome>]
+    public void touch(SistemaArquivos fs, List<String> args) {
+        if (args.isEmpty()) {
+            System.out.println("Uso: touch <arquivo>");
+            return;
+        }
+        System.out.println(fs.touch(args.getFirst()));
     }
 
     // clear (simulação, só adiciona uns espaços)

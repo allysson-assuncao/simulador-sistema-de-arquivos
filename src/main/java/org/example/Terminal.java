@@ -24,21 +24,21 @@ public class Terminal {
     }
 
     private void inicializarComandos() {
-        mapaComandos.put("mkdir", implementacao::mkdir);
-        mapaComandos.put("ls", implementacao::ls);
-        mapaComandos.put("cd", implementacao::cd);
-        mapaComandos.put("rm", implementacao::rm);
-        mapaComandos.put("rmdir", implementacao::rm); // alias
-        /*mapaComandos.put("touch", implementacao::touch);
-        mapaComandos.put("tree", implementacao::tree);*/
-        mapaComandos.put("pwd", implementacao::pwd);
-        mapaComandos.put("clear", implementacao::clear);
-
         // Comando especial para sair do loop
         mapaComandos.put("exit", (fs, args) -> {
             this.executando = false;
             System.out.println("Encerrando simulação...");
         });
+
+        mapaComandos.put("cd", implementacao::cd);
+        mapaComandos.put("pwd", implementacao::pwd);
+        mapaComandos.put("ls", implementacao::ls);
+        mapaComandos.put("mkdir", implementacao::mkdir);
+        mapaComandos.put("rm", implementacao::rm);
+        mapaComandos.put("rmdir", implementacao::rm); // alias
+        mapaComandos.put("touch", implementacao::touch);
+        /*mapaComandos.put("tree", implementacao::tree);*/
+        mapaComandos.put("clear", implementacao::clear);
 
         // Comando de Ajuda
         mapaComandos.put("help", (fs, args) -> {
