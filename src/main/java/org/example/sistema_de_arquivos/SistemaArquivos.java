@@ -7,62 +7,182 @@ public class SistemaArquivos {
     private Diretorio diretorioAtual;
 
     public SistemaArquivos() {
-        // A raiz não tem pai (null)
-        this.raiz = new Diretorio("/", null);
-        this.diretorioAtual = this.raiz;
-    }
-
-    public String getCaminhoAtual() {
-        if (this.diretorioAtual == this.raiz) return "/";
-
-        // Reconstrói o caminho subindo a árvore
-        StringBuilder path = new StringBuilder();
-        Diretorio temp = this.diretorioAtual;
-        while (temp != null && temp != this.raiz) {
-            path.insert(0, "/" + temp.getNome());
-            temp = temp.getPai();
-        }
-        return path.toString();
+        // Raiz é um caso especial: nome "/" e pai null
+        // Instancia direta para burlar a validação do construtor na raiz
+        this.raiz = new Diretorio("root", null) {
+            @Override
+            public String getNome() {
+                return "/";
+            }
+        };
+        this.diretorioAtual = raiz;
     }
 
     public Diretorio getDiretorioAtual() {
-        return this.diretorioAtual;
+        return diretorioAtual;
     }
 
-    // Lógica de mudar diretório (cd)
-    public String cd(String caminho) {
-        if (caminho.equals("..")) {
-            if (diretorioAtual.getPai() != null) {
-                diretorioAtual = diretorioAtual.getPai();
-                return "";
-            }
-            return ""; // Já está na raiz, não faz nada
-        }
+    // Método essencial do sistema: Retorna o Nó apontado pelo caminho usando recursividade e tratando casos específicos
+    private NoSistema resolverCaminho(String caminho) throws Exception {
+        if (caminho == null || caminho.isEmpty()) return diretorioAtual;
 
-        if (caminho.equals("/")) {
-            diretorioAtual = raiz;
-            return "";
-        }
-
-        NoSistema no = diretorioAtual.getFilho(caminho);
-        if (no instanceof Diretorio) {
-            diretorioAtual = (Diretorio) no;
-            return "";
-        } else if (no instanceof Arquivo) {
-            return "Erro: '" + caminho + "' não é um diretório.";
+        // 1. Decide por onde começar a busca a partir do primeiro caractere
+        Diretorio atualNavegacao;
+        if (caminho.startsWith("/")) {
+            atualNavegacao = raiz; // Caminho Absoluto
         } else {
-            return "Erro: Diretório não encontrado.";
+            atualNavegacao = diretorioAtual; // Caminho Relativo
+        }
+
+        // 2. Pega cada parte do caminho entre as barras
+        String[] partes = caminho.split("/");
+
+        // 3. Caminha pela árvore
+        for (String parte : partes) {
+            if (parte.isEmpty() || parte.equals(".")) {
+                break; // Talvez nem precise
+            } else if (parte.equals("..")) {
+                if (atualNavegacao.getPai() != null) {
+                    atualNavegacao = atualNavegacao.getPai();
+                }
+                // Se pai for null (raiz), continua na raiz
+            } else {
+                // Tenta descer um nível
+                NoSistema proximo = atualNavegacao.getFilho(parte);
+                if (proximo == null) {
+                    throw new Exception("Caminho inválido: '" + parte + "' não existe.");
+                }
+
+                // Se tem um caminho no meio do caminho: erro
+                if (proximo instanceof Arquivo) {
+                    if (parte.equals(partes[partes.length - 1])) {
+                        return proximo;
+                    }
+                    throw new Exception("Erro: '" + parte + "' não é um diretório.");
+                }
+
+                // É um diretório, prossegue até o fim do caminho
+                atualNavegacao = (Diretorio) proximo;
+            }
+        }
+        return atualNavegacao;
+    }
+
+    // PWD
+    public String getCaminhoCompleto() {
+        if (diretorioAtual == raiz) return "/";
+
+        StringBuilder sb = new StringBuilder();
+        Diretorio temp = diretorioAtual;
+        while (temp != raiz) {
+            sb.insert(0, "/" + temp.getNome());
+            temp = temp.getPai();
+        }
+        return sb.toString();
+    }
+
+    // CD
+    public String cd(String caminho) {
+        try {
+            NoSistema alvo = resolverCaminho(caminho);
+            if (alvo instanceof Diretorio) {
+                this.diretorioAtual = (Diretorio) alvo;
+                return "";
+            } else {
+                return "Erro: '" + alvo.getNome() + "' não é um diretório.";
+            }
+        } catch (Exception e) {
+            return e.getMessage();
         }
     }
 
-    // Lógica de criar diretório (mkdir)
-    public String mkdir(String nome) {
-        if (diretorioAtual.getFilho(nome) != null) {
-            return "Erro: Já existe um arquivo ou diretório com este nome.";
+    // MKDIR (Suporta "mkdir pasta" ou "mkdir /a/b/pasta")
+    public String mkdir(String caminho) {
+        try {
+            // Separa o caminho do pai e o nome do novo diretório
+            String nomeNovoDir;
+            Diretorio paiAlvo;
+
+            int indiceUltimaBarra = caminho.lastIndexOf('/');
+
+            if (indiceUltimaBarra == -1) {
+                // Caso simples: "mkdir pasta" (diretório atual)
+                nomeNovoDir = caminho;
+                paiAlvo = diretorioAtual;
+            } else {
+                // Caso complexo: "mkdir pai/filho"
+                String caminhoPai = caminho.substring(0, indiceUltimaBarra);
+                nomeNovoDir = caminho.substring(indiceUltimaBarra + 1); // Pega o que está depois da última barra
+
+                // Se o caminho for apenas "/", o pai é a raiz
+                if (caminhoPai.isEmpty()) caminhoPai = "/";
+
+                NoSistema noPai = resolverCaminho(caminhoPai);
+                if (!(noPai instanceof Diretorio)) return "Erro: Caminho base não é diretório.";
+                paiAlvo = (Diretorio) noPai;
+            }
+
+            // Validação final e criação
+            if (paiAlvo.getFilho(nomeNovoDir) != null) {
+                return "Erro: Já existe algo com o nome '" + nomeNovoDir + "'.";
+            }
+
+            Diretorio novo = new Diretorio(nomeNovoDir, paiAlvo);
+            paiAlvo.adicionarFilho(novo);
+            return "Diretório '" + nomeNovoDir + "' criado com sucesso.";
+
+        } catch (Exception e) {
+            return "Erro ao criar diretório: " + e.getMessage();
         }
-        Diretorio novoDir = new Diretorio(nome, diretorioAtual);
-        diretorioAtual.adicionarFilho(novoDir);
-        return "Diretório '" + nome + "' criado.";
+    }
+
+    // LS
+    public String ls(String caminhoOpcional) {
+        try {
+            Diretorio alvo = diretorioAtual;
+            if (caminhoOpcional != null && !caminhoOpcional.isEmpty()) {
+                NoSistema no = resolverCaminho(caminhoOpcional);
+                if (no instanceof Diretorio) alvo = (Diretorio) no;
+                else return no.getNome(); // Se for arquivo, mostra só o nome
+            }
+
+            if (alvo.getFilhos().isEmpty()) return "";
+
+            StringBuilder saida = new StringBuilder();
+            for (NoSistema filho : alvo.getFilhos().values()) {
+                if (filho instanceof Diretorio) saida.append("[D] ");
+                else saida.append("[A] ");
+                saida.append(filho.getNome()).append("  ");
+            }
+            return saida.toString();
+
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    // RM (Remove arquivos ou diretórios vazios)
+    public String rm(String caminho) {
+        try {
+            // É necessário encontrar o alvo e remover a referência do pai
+            NoSistema alvo = resolverCaminho(caminho);
+
+            if (alvo == raiz) return "Erro: Não é possível remover a raiz.";
+
+            Diretorio pai = alvo.getPai();
+
+            if (alvo instanceof Diretorio) {
+                if (((Diretorio) alvo).temFilhos()) {
+                    return "Erro: O diretório não está vazio (use rm -rf para remover tudo de forma recursiva).";
+                }
+            }
+
+            pai.removerFilho(alvo.getNome());
+            return "Removido: " + alvo.getNome();
+
+        } catch (Exception e) {
+            return "Erro ao remover: " + e.getMessage();
+        }
     }
 
 }

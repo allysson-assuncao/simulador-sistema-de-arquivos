@@ -19,17 +19,20 @@ public class Comandos {
 
     // [cd <nome> | .. | /]
     public void cd(SistemaArquivos fs, List<String> args) {
-        if (args.isEmpty()) return; // talvez direcionar para home se o parametro nao for informado
-
-        String resultado = fs.cd(args.get(0));
-        if (!resultado.isEmpty()) {
-            System.out.println(resultado);
-        }
+        if (args.isEmpty()) return; // Talvez ir pra home
+        String msg = fs.cd(args.getFirst());
+        if (!msg.isEmpty()) System.out.println(msg);
     }
 
     // [pwd] - Extra, só para testar navegação
     public void pwd(SistemaArquivos fs, List<String> args) {
-        System.out.println(fs.getCaminhoAtual());
+        System.out.println(fs.getCaminhoCompleto());
+    }
+
+    // [ls <caminho> -modificadores]
+    public void ls(SistemaArquivos fs, List<String> args) {
+        String alvo = args.isEmpty() ? null : args.get(0);
+        System.out.println(fs.ls(alvo));
     }
 
     // [mkdir <nome>]
@@ -39,7 +42,21 @@ public class Comandos {
             return;
         }
         // Executa e imprime o resultado
-        System.out.println(fs.mkdir(args.get(0)));
+        System.out.println(fs.mkdir(args.getFirst()));
+    }
+
+    // [rm <nome/caminho> -modificadores]
+    public void rm(SistemaArquivos fs, List<String> args) {
+        if (args.isEmpty()) {
+            System.out.println("Uso: rm <caminho>");
+            return;
+        }
+        System.out.println(fs.rm(args.getFirst()));
+    }
+
+    // clear (simulação, só adiciona uns espaços)
+    public void clear(SistemaArquivos fs, List<String> args) {
+        for(int i = 0; i < 50; i++) System.out.println();
     }
 
 }

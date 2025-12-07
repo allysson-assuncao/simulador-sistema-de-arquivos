@@ -8,6 +8,10 @@ public class Arquivo extends NoSistema {
         this.conteudo = new StringBuilder();
     }
 
+    public void setConteudo(String texto) {
+        this.conteudo = new StringBuilder(texto);
+    }
+
     public void appendConteudo(String texto) {
         this.conteudo.append(texto).append("\n");
     }

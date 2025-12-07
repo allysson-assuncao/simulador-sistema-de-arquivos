@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Diretorio extends NoSistema {
+    // HashMap: Representa os filhos diretos de cada diretório
+    // A chave de cada nó é apenas o seu nome, o valor é o objeto em sí
     private Map<String, NoSistema> filhos;
 
     public Diretorio(String nome, Diretorio pai) {
@@ -15,6 +17,10 @@ public class Diretorio extends NoSistema {
         filhos.put(no.getNome(), no);
     }
 
+    public void removerFilho(String nome) {
+        filhos.remove(nome);
+    }
+
     public NoSistema getFilho(String nome) {
         return filhos.get(nome);
     }
@@ -23,8 +29,8 @@ public class Diretorio extends NoSistema {
         return filhos;
     }
 
-    public void removerFilho(String nome) {
-        filhos.remove(nome);
+    public boolean temFilhos() {
+        return !filhos.isEmpty();
     }
 
     @Override
