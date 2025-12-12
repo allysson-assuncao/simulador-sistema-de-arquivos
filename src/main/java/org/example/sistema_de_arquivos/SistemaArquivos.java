@@ -1,5 +1,9 @@
 package org.example.sistema_de_arquivos;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
 //Classe responsável por gerenciar o sistema de arquivos.
 public class SistemaArquivos {
 
@@ -68,7 +72,7 @@ public class SistemaArquivos {
         return atualNavegacao;
     }
 
-    // PWD
+    // PWD (Exibe o caminho atual completo)
     public String getCaminhoCompleto() {
         if (diretorioAtual == raiz) return "/";
 
@@ -81,7 +85,7 @@ public class SistemaArquivos {
         return sb.toString();
     }
 
-    // CD
+    // CD (Navega pelo sistema de arquivos)
     public String cd(String caminho) {
         try {
             NoSistema alvo = resolverCaminho(caminho);
@@ -96,7 +100,7 @@ public class SistemaArquivos {
         }
     }
 
-    // LS
+    // LS (Lista os diretórios e arquivos dentro de um diretório)
     public String ls(String caminhoOpcional) {
         try {
             Diretorio alvo = diretorioAtual;
@@ -185,7 +189,7 @@ public class SistemaArquivos {
         }
     }
 
-    // TOUCH: Cria um arquivo vazio ou atualiza timestamp
+    // TOUCH (Cria um arquivo vazio)
     public String touch(String caminho) {
         try {
             // Resolve o pai (diretório onde o arquivo ficará)
@@ -221,6 +225,33 @@ public class SistemaArquivos {
 
         } catch (Exception e) {
             return "Erro: " + e.getMessage();
+        }
+    }
+
+    // Tree (Auxiliar recursivo)
+    public String tree() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(".\n");
+        listarRecursivo(diretorioAtual, "", sb);
+        return sb.toString();
+    }
+
+    private void listarRecursivo(Diretorio dir, String prefixo, StringBuilder sb) {
+        List<NoSistema> filhos = new ArrayList<>(dir.getFilhos().values());
+        // Ordenar para facilitar a leitura e identificação
+        filhos.sort(Comparator.comparing(NoSistema::getNome));
+
+        for (int i = 0; i < filhos.size(); i++) {
+            NoSistema no = filhos.get(i);
+            boolean isLast = (i == filhos.size() - 1);
+
+            sb.append(prefixo);
+            sb.append(isLast ? "└── " : "├── ");
+            sb.append(no.getNome()).append("\n");
+
+            if (no instanceof Diretorio) {
+                listarRecursivo((Diretorio) no, prefixo + (isLast ? "    " : "│   "), sb);
+            }
         }
     }
 
