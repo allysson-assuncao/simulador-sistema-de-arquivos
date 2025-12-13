@@ -20,6 +20,70 @@ public class SistemaArquivos {
             }
         };
         this.diretorioAtual = raiz;
+
+        /*inicializarEstruturaPadrao();
+
+        try {
+            cd("/home/user");
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+        }*/
+    }
+
+    private void inicializarEstruturaPadrao() {
+        try {
+            // 1. Diretórios da Raiz (Base Linux)
+            mkdir("/home");
+            mkdir("/lib");
+            mkdir("/run");
+            mkdir("/tmp");
+            mkdir("/usr");
+            mkdir("/var");
+            mkdir("/etc");
+            mkdir("/bin");
+
+            // 2. Estrutura do Usuário
+            mkdir("/home/user");
+            mkdir("/home/user/Documents");
+            mkdir("/home/user/Downloads");
+            mkdir("/home/user/Desktop");
+            mkdir("/home/user/Pictures");
+
+            // 3. Subdiretórios de Sistema
+            mkdir("/var/log");
+            mkdir("/usr/bin");
+
+            // 4. Arquivos Iniciais (usando touch)
+
+            // Em Documents
+            touch("/home/user/Documents/trabalho_so.txt");
+            escreverNoArquivo("/home/user/Documents/trabalho_so.txt", "Rascunho do trabalho de Sistemas Operacionais\nData: 20/01/25");
+
+            touch("/home/user/Documents/receita.txt");
+            escreverNoArquivo("/home/user/Documents/receita.txt", "Ingredientes:\n- Leite\n- Ovos\n- Farinha");
+
+            // Em Desktop
+            touch("/home/user/Desktop/todo.list");
+            escreverNoArquivo("/home/user/Desktop/todo.list", "1. Implementar comandos\n2. Testar cd\n3. Repetir");
+
+            // Em Logs
+            touch("/var/log/syslog");
+            escreverNoArquivo("/var/log/syslog", "[INFO] Sistema de Arquivos Inicializado com Sucesso.");
+
+        } catch (Exception e) {
+            System.err.println("Erro ao inicializar estrutura padrão: " + e.getMessage());
+        }
+    }
+
+    private void escreverNoArquivo(String caminho, String texto) {
+        try {
+            NoSistema no = resolverCaminho(caminho);
+            if (no instanceof Arquivo) {
+                ((Arquivo) no).setConteudo(texto);
+            }
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+        }
     }
 
     public Diretorio getDiretorioAtual() {
@@ -128,6 +192,11 @@ public class SistemaArquivos {
     // MKDIR (Suporta "mkdir pasta" ou "mkdir /a/b/pasta")
     public String mkdir(String caminho) {
         try {
+            // Tratamento para evitar a criação de pastas vazias
+            if (caminho.endsWith("/")) {
+                caminho = caminho.substring(0, caminho.length() - 1);
+            }
+
             // Separa o caminho do pai e o nome do novo diretório
             String nomeNovoDir;
             Diretorio paiAlvo;
@@ -135,27 +204,34 @@ public class SistemaArquivos {
             int indiceUltimaBarra = caminho.lastIndexOf('/');
 
             if (indiceUltimaBarra == -1) {
-                // Caso simples: "mkdir pasta" (diretório atual)
+                // Caso 1: Caminho relativo simples -> "pasta"
                 nomeNovoDir = caminho;
                 paiAlvo = diretorioAtual;
             } else {
-                // Caso complexo: "mkdir pai/filho"
+                // Caso 2: Caminho composto -> "/pai/filho"
                 String caminhoPai = caminho.substring(0, indiceUltimaBarra);
-                nomeNovoDir = caminho.substring(indiceUltimaBarra + 1); // Pega o que está depois da última barra
+                nomeNovoDir = caminho.substring(indiceUltimaBarra + 1);
 
-                // Se o caminho for apenas "/", o pai é a raiz
-                if (caminhoPai.isEmpty()) caminhoPai = "/";
+                // Se o pai for vazio, significa que é filho da raiz (ex: "/home")
+                if (caminhoPai.isEmpty()) {
+                    caminhoPai = "/";
+                }
 
+                // Busca o objeto do pai
                 NoSistema noPai = resolverCaminho(caminhoPai);
-                if (!(noPai instanceof Diretorio)) return "Erro: Caminho base não é diretório.";
+
+                if (noPai == null) return "Erro: Caminho base não encontrado.";
+                if (!(noPai instanceof Diretorio)) return "Erro: '" + caminhoPai + "' não é um diretório.";
+
                 paiAlvo = (Diretorio) noPai;
             }
 
-            // Validação final e criação
+            // Validação: Já existe?
             if (paiAlvo.getFilho(nomeNovoDir) != null) {
                 return "Erro: Já existe algo com o nome '" + nomeNovoDir + "'.";
             }
 
+            // Criação e ligação
             Diretorio novo = new Diretorio(nomeNovoDir, paiAlvo);
             paiAlvo.adicionarFilho(novo);
             return "Diretório '" + nomeNovoDir + "' criado com sucesso.";
@@ -232,7 +308,7 @@ public class SistemaArquivos {
     public String tree(String caminho) {
         StringBuilder sb = new StringBuilder();
         sb.append(".\n");
-        if (caminho == null) {
+        if (caminho.isEmpty()) {
             listarRecursivo(diretorioAtual, "", sb);
         } else {
             try {

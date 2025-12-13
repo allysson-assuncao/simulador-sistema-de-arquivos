@@ -65,7 +65,7 @@ public class Comandos {
 
     // [touch <caminho>]
     public void tree(SistemaArquivos fs, List<String> args) {
-        System.out.println(fs.tree(args.getFirst().isEmpty() ?  null : args.getFirst()));
+        System.out.println(fs.tree(args.isEmpty() || args.getFirst().isEmpty() ?  "" : args.getFirst()));
     }
 
     // clear (simulação, só adiciona uns espaços)
