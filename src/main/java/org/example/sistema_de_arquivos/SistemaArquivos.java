@@ -21,13 +21,13 @@ public class SistemaArquivos {
         };
         this.diretorioAtual = raiz;
 
-        /*inicializarEstruturaPadrao();
+        inicializarEstruturaPadrao();
 
         try {
             cd("/home/user");
         } catch (Exception e) {
             System.err.println(e.getMessage());
-        }*/
+        }
     }
 
     private void inicializarEstruturaPadrao() {
@@ -94,10 +94,16 @@ public class SistemaArquivos {
     private NoSistema resolverCaminho(String caminho) throws Exception {
         if (caminho == null || caminho.isEmpty()) return diretorioAtual;
 
+        // Atalho simples
+        if (caminho.equals("/")) return raiz;
+        if (caminho.equals(".")) return diretorioAtual;
+
         // 1. Decide por onde começar a busca a partir do primeiro caractere
         Diretorio atualNavegacao;
         if (caminho.startsWith("/")) {
             atualNavegacao = raiz; // Caminho Absoluto
+            // Remove a primeira barra para evitar a criação de uma string vazia no split
+            caminho = caminho.substring(1);
         } else {
             atualNavegacao = diretorioAtual; // Caminho Relativo
         }
@@ -107,31 +113,33 @@ public class SistemaArquivos {
 
         // 3. Caminha pela árvore
         for (String parte : partes) {
+            // Ignora partes vazias (caso de barras duplas //) ou ponto (.)
             if (parte.isEmpty() || parte.equals(".")) {
-                break; // Talvez nem precise
+                continue;
             } else if (parte.equals("..")) {
                 if (atualNavegacao.getPai() != null) {
                     atualNavegacao = atualNavegacao.getPai();
                 }
                 // Se pai for null (raiz), continua na raiz
-            } else {
-                // Tenta descer um nível
-                NoSistema proximo = atualNavegacao.getFilho(parte);
-                if (proximo == null) {
-                    throw new Exception("Caminho inválido: '" + parte + "' não existe.");
-                }
-
-                // Se tem um caminho no meio do caminho: erro
-                if (proximo instanceof Arquivo) {
-                    if (parte.equals(partes[partes.length - 1])) {
-                        return proximo;
-                    }
-                    throw new Exception("Erro: '" + parte + "' não é um diretório.");
-                }
-
-                // É um diretório, prossegue até o fim do caminho
-                atualNavegacao = (Diretorio) proximo;
+                continue;
             }
+            // Tenta descer um nível
+            NoSistema proximo = atualNavegacao.getFilho(parte);
+            if (proximo == null) {
+                throw new Exception("Caminho não encontrado: " + parte);
+            }
+
+            // Se tem um caminho no meio do caminho: erro
+            if (proximo instanceof Arquivo) {
+                if (parte.equals(partes[partes.length - 1])) {
+                    return proximo;
+                }
+                throw new Exception("Erro: '" + parte + "' não é um diretório.");
+            }
+
+            // É um diretório, prossegue até o fim do caminho
+            atualNavegacao = (Diretorio) proximo;
+
         }
         return atualNavegacao;
     }
