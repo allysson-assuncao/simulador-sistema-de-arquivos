@@ -44,8 +44,8 @@ public class Terminal {
         head - Allysson
         tail - Allysson
         wc - Allysson
-        stat - Moises
-        du -  Moises
+        stat - Moisés
+        du -  Moisés
 
         Criação e Remoção de Elementos (Diretórios e Arquivos): (4/6) - Allysson
         mkdir - completo
@@ -64,7 +64,7 @@ public class Terminal {
         chown -
 
         Operações *Avançadas: (0/4) - Bryan
-        cp - 
+        cp -
         mv -
         zip -
         unzip -
