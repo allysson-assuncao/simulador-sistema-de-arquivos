@@ -63,6 +63,11 @@ public class Comandos {
         System.out.println(fs.touch(args.getFirst()));
     }
 
+    // [touch <caminho>]
+    public void tree(SistemaArquivos fs, List<String> args) {
+        System.out.println(fs.tree(args.getFirst().isEmpty() ?  null : args.getFirst()));
+    }
+
     // clear (simulação, só adiciona uns espaços)
     public void clear(SistemaArquivos fs, List<String> args) {
         for(int i = 0; i < 50; i++) System.out.println();

@@ -37,7 +37,7 @@ public class Terminal {
         mapaComandos.put("rm", implementacao::rm);
         mapaComandos.put("rmdir", implementacao::rm); // alias
         mapaComandos.put("touch", implementacao::touch);
-        /*mapaComandos.put("tree", implementacao::tree);*/
+        mapaComandos.put("tree", implementacao::tree);
         mapaComandos.put("clear", implementacao::clear);
 
         // Comando de Ajuda

@@ -228,11 +228,22 @@ public class SistemaArquivos {
         }
     }
 
-    // Tree (Auxiliar recursivo)
-    public String tree() {
+    // Tree (Exibe a arvore de diretórios a partir de um caminho de forma recursivo)
+    public String tree(String caminho) {
         StringBuilder sb = new StringBuilder();
         sb.append(".\n");
-        listarRecursivo(diretorioAtual, "", sb);
+        if (caminho == null) {
+            listarRecursivo(diretorioAtual, "", sb);
+        } else {
+            try {
+                NoSistema no = resolverCaminho(caminho);
+                if (no instanceof Diretorio) {
+                    listarRecursivo((Diretorio) no, "", sb);
+                }
+            } catch (Exception e) {
+                listarRecursivo(diretorioAtual, "", sb);
+            }
+        }
         return sb.toString();
     }
 
