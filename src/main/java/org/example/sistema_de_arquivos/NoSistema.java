@@ -4,6 +4,7 @@ public abstract class NoSistema {
     protected String nome;
     protected Diretorio pai; // Referência direta ao objeto pai (para subir na árvore)
 
+
     public NoSistema(String nome, Diretorio pai) {
         // Validação de Integridade: Nome não pode conter '/'
         if (nome.contains("/")) {
