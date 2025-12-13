@@ -30,6 +30,47 @@ public class Terminal {
             System.out.println("Encerrando simulação...");
         });
 
+        /*
+
+        Navegação e Exibição Básica:(3/6) - Allysson
+        cd (por caminho, .. ou /: para a raiz) - incompleto: falta habilitar a navegação par a raiz
+        pwd - completo
+        ls -l - incompleto: falta implementar a listagem detalhada com o parâmetro -l
+        tree - completo
+        cat -
+        history -
+
+        Exibição Avançada:(0/3) -
+        head - Allysson
+        tail - Allysson
+        wc - Allysson
+        stat - Moises
+        du -  Moises
+
+        Criação e Remoção de Elementos (Diretórios e Arquivos): (4/6) - Allysson
+        mkdir - completo
+        rm - completo
+        rmdir - completo (rm)
+        touch - completo
+        rename -
+        echo (substituir ou atualizar, >, >>) -
+
+        Busca e Filtagem: (0\2) - Moisés
+        find -
+        grep -
+
+        Permissões e Propriedades: (0/2) - Samuel
+        chmod -
+        chown -
+
+        Operações *Avançadas: (0/4) - Bryan
+        cp - 
+        mv -
+        zip -
+        unzip -
+
+        */
+
         mapaComandos.put("cd", implementacao::cd);
         mapaComandos.put("pwd", implementacao::pwd);
         mapaComandos.put("ls", implementacao::ls);
