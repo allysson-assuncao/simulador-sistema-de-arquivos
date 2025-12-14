@@ -9,6 +9,7 @@ public class SistemaArquivos {
 
     private Diretorio raiz;
     private Diretorio diretorioAtual;
+    private List<String> historicoComandos;
 
     public SistemaArquivos() {
         // Raiz é um caso especial: nome "/" e pai null
@@ -20,6 +21,7 @@ public class SistemaArquivos {
             }
         };
         this.diretorioAtual = raiz;
+        this.historicoComandos = new ArrayList<>();
 
         inicializarEstruturaPadrao();
 
@@ -28,6 +30,10 @@ public class SistemaArquivos {
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
+    }
+
+    public void registrarComando(String comando) {
+        historicoComandos.add(comando);
     }
 
     private void inicializarEstruturaPadrao() {
@@ -173,7 +179,7 @@ public class SistemaArquivos {
     }
 
     // LS (Lista os diretórios e arquivos dentro de um diretório)
-    public String ls(String caminhoOpcional) {
+    public String ls(String caminhoOpcional, boolean mostrarOcultos, boolean formatoLongo) {
         try {
             Diretorio alvo = diretorioAtual;
             if (caminhoOpcional != null && !caminhoOpcional.isEmpty()) {
@@ -195,6 +201,90 @@ public class SistemaArquivos {
         } catch (Exception e) {
             return e.getMessage();
         }
+    }
+
+    // Auxiliar de formatação do LS
+    private String formatarSaidaLs(List<NoSistema> nos, boolean longo) {
+        if (nos.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+
+        for (NoSistema no : nos) {
+            if (longo) {
+                // Formato: -rw-r--r-- 1 user 1024 Jan 01 12:00 arquivo.txt
+                sb.append(String.format("%s 1 %s %5d %s %s\n",
+                        no.getPermissoes(),
+                        no.getDono(),
+                        no.getTamanho(),
+                        no.getDataFormatada(),
+                        no.getNome()
+                ));
+            } else {
+                // Formato simples
+                sb.append(no.getNome()).append("  ");
+            }
+        }
+        if (!longo) sb.append("\n");
+        return sb.toString();
+    }
+
+    // Tree (Exibe a arvore de diretórios a partir de um caminho de forma recursivo)
+    public String tree(String caminho) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(".\n");
+        if (caminho.isEmpty()) {
+            listarRecursivo(diretorioAtual, "", sb);
+        } else {
+            try {
+                NoSistema no = resolverCaminho(caminho);
+                if (no instanceof Diretorio) {
+                    listarRecursivo((Diretorio) no, "", sb);
+                }
+            } catch (Exception e) {
+                listarRecursivo(diretorioAtual, "", sb);
+            }
+        }
+        return sb.toString();
+    }
+
+    private void listarRecursivo(Diretorio dir, String prefixo, StringBuilder sb) {
+        List<NoSistema> filhos = new ArrayList<>(dir.getFilhos().values());
+        // Ordenar para facilitar a leitura e identificação
+        filhos.sort(Comparator.comparing(NoSistema::getNome));
+
+        for (int i = 0; i < filhos.size(); i++) {
+            NoSistema no = filhos.get(i);
+            boolean isLast = (i == filhos.size() - 1);
+
+            sb.append(prefixo);
+            sb.append(isLast ? "└── " : "├── ");
+            sb.append(no.getNome()).append("\n");
+
+            if (no instanceof Diretorio) {
+                listarRecursivo((Diretorio) no, prefixo + (isLast ? "    " : "│   "), sb);
+            }
+        }
+    }
+
+    // CAT (Exibe o conteúdo de arquivos)
+    public String cat(String caminho) {
+        try {
+            NoSistema no = resolverCaminho(caminho);
+            if (no instanceof Diretorio) {
+                return "cat: " + no.getNome() + ": É um diretório";
+            }
+            return ((Arquivo) no).getConteudo();
+        } catch (Exception e) {
+            return "cat: " + e.getMessage();
+        }
+    }
+
+    // HISTORY (Exibe o histórico dos comandos executados)
+    public String getHistorico() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < historicoComandos.size(); i++) {
+            sb.append(i + 1).append("  ").append(historicoComandos.get(i)).append("\n");
+        }
+        return sb.toString();
     }
 
     // MKDIR (Suporta "mkdir pasta" ou "mkdir /a/b/pasta")
@@ -309,44 +399,6 @@ public class SistemaArquivos {
 
         } catch (Exception e) {
             return "Erro: " + e.getMessage();
-        }
-    }
-
-    // Tree (Exibe a arvore de diretórios a partir de um caminho de forma recursivo)
-    public String tree(String caminho) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(".\n");
-        if (caminho.isEmpty()) {
-            listarRecursivo(diretorioAtual, "", sb);
-        } else {
-            try {
-                NoSistema no = resolverCaminho(caminho);
-                if (no instanceof Diretorio) {
-                    listarRecursivo((Diretorio) no, "", sb);
-                }
-            } catch (Exception e) {
-                listarRecursivo(diretorioAtual, "", sb);
-            }
-        }
-        return sb.toString();
-    }
-
-    private void listarRecursivo(Diretorio dir, String prefixo, StringBuilder sb) {
-        List<NoSistema> filhos = new ArrayList<>(dir.getFilhos().values());
-        // Ordenar para facilitar a leitura e identificação
-        filhos.sort(Comparator.comparing(NoSistema::getNome));
-
-        for (int i = 0; i < filhos.size(); i++) {
-            NoSistema no = filhos.get(i);
-            boolean isLast = (i == filhos.size() - 1);
-
-            sb.append(prefixo);
-            sb.append(isLast ? "└── " : "├── ");
-            sb.append(no.getNome()).append("\n");
-
-            if (no instanceof Diretorio) {
-                listarRecursivo((Diretorio) no, prefixo + (isLast ? "    " : "│   "), sb);
-            }
         }
     }
 

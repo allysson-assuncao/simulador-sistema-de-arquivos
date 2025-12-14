@@ -19,7 +19,11 @@ public class Comandos {
 
     // [cd <nome> | .. | /]
     public void cd(SistemaArquivos fs, List<String> args) {
-        if (args.isEmpty()) return; // Talvez ir pra home
+        if (args.isEmpty()) {
+            // Comportamento padrão Linux sem args: vai para home
+            System.out.println(fs.cd("/home/user"));
+            return;
+        }
         String msg = fs.cd(args.getFirst());
         if (!msg.isEmpty()) System.out.println(msg);
     }
@@ -29,10 +33,44 @@ public class Comandos {
         System.out.println(fs.getCaminhoCompleto());
     }
 
-    // [ls <caminho> -modificadores]
+    // [ls <caminho> -modificadores] (flags tratadas: -a, -l, -la)
     public void ls(SistemaArquivos fs, List<String> args) {
-        String alvo = args.isEmpty() ? null : args.getFirst();
-        System.out.println(fs.ls(alvo));
+        boolean mostrarOcultos = false;
+        boolean formatoLongo = false;
+        String caminho = null;
+
+        for (String arg : args) {
+            if (arg.startsWith("-")) {
+                if (arg.contains("a")) mostrarOcultos = true;
+                if (arg.contains("l")) formatoLongo = true;
+            } else {
+                caminho = arg; // Assume que o que não é flag, é caminho
+            }
+        }
+
+        System.out.print(fs.ls(caminho, mostrarOcultos, formatoLongo));
+    }
+
+    // [touch <caminho>]
+    public void tree(SistemaArquivos fs, List<String> args) {
+        System.out.println(fs.tree(args.isEmpty() || args.getFirst().isEmpty() ?  "" : args.getFirst()));
+    }
+
+    // [cat <caminho>]
+    public void cat(SistemaArquivos fs, List<String> args) {
+        if (args.isEmpty()) {
+            System.out.println("Uso: cat <arquivo>");
+            return;
+        }
+        // Suporta múltiplos arquivos: cat a.txt b.txt
+        for (String arg : args) {
+            System.out.println(fs.cat(arg));
+        }
+    }
+
+    // [history] Novo
+    public void history(SistemaArquivos fs, List<String> args) {
+        System.out.print(fs.getHistorico());
     }
 
     // [mkdir <nome>]
@@ -61,11 +99,6 @@ public class Comandos {
             return;
         }
         System.out.println(fs.touch(args.getFirst()));
-    }
-
-    // [touch <caminho>]
-    public void tree(SistemaArquivos fs, List<String> args) {
-        System.out.println(fs.tree(args.isEmpty() || args.getFirst().isEmpty() ?  "" : args.getFirst()));
     }
 
     // clear (simulação, só adiciona uns espaços)

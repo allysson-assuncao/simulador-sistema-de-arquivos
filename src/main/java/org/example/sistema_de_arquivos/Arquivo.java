@@ -6,6 +6,7 @@ public class Arquivo extends NoSistema {
     public Arquivo(String nome, Diretorio pai) {
         super(nome, pai);
         this.conteudo = new StringBuilder();
+        this.permissoes = "-rw-r--r--";// Permissão padrão de arquivo
     }
 
     public void setConteudo(String texto) {
@@ -24,4 +25,10 @@ public class Arquivo extends NoSistema {
     public String getTipo() {
         return "ARQUIVO";
     }
+
+    @Override
+    public int getTamanho() {
+        return conteudo.length(); // Tamanho em caracteres (bytes aproximados)
+    }
+
 }

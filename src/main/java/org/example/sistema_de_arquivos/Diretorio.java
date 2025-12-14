@@ -11,6 +11,7 @@ public class Diretorio extends NoSistema {
     public Diretorio(String nome, Diretorio pai) {
         super(nome, pai);
         this.filhos = new HashMap<>();
+        this.permissoes = "drwxr-xr-x"; // Permissão padrão de diretório (d no início)
     }
 
     public void adicionarFilho(NoSistema no) {
@@ -34,5 +35,13 @@ public class Diretorio extends NoSistema {
     }
 
     @Override
-    public String getTipo() { return "DIRETORIO"; }
+    public String getTipo() {
+        return "DIRETORIO";
+    }
+
+    @Override
+    public int getTamanho() {
+        return 4096; // Tamanho padrão de diretório em Linux (metadados), não a soma dos filhos
+    }
+
 }

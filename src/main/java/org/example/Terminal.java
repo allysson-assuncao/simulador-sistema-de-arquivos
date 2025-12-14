@@ -24,12 +24,6 @@ public class Terminal {
     }
 
     private void inicializarComandos() {
-        // Comando especial para sair do loop
-        mapaComandos.put("exit", (fs, args) -> {
-            this.executando = false;
-            System.out.println("Encerrando simulação...");
-        });
-
         /*
 
         Navegação e Exibição Básica:(3/6) - Allysson
@@ -52,8 +46,8 @@ public class Terminal {
         rm - completo
         rmdir - completo (rm)
         touch - completo
-        rename -
         echo (substituir ou atualizar, >, >>) -
+        rename -
 
         Busca e Filtagem: (0\2) - Moisés
         find -
@@ -71,19 +65,51 @@ public class Terminal {
 
         */
 
+        // Navegação e Exibição Básica
         mapaComandos.put("cd", implementacao::cd);
         mapaComandos.put("pwd", implementacao::pwd);
         mapaComandos.put("ls", implementacao::ls);
+        mapaComandos.put("tree", implementacao::tree);
+        /*mapaComandos.put("cat", implementacao::cat);
+        mapaComandos.put("history", implementacao::history);*/
+
+        // Exibição Avançada
+        /*mapaComandos.put("head", implementacao::head);
+        mapaComandos.put("tail", implementacao::tail);
+        mapaComandos.put("wc", implementacao::wc);
+        mapaComandos.put("stat", implementacao::stat);
+        mapaComandos.put("du", implementacao::du);*/
+
+        // Criação e Remoção de Elementos
         mapaComandos.put("mkdir", implementacao::mkdir);
         mapaComandos.put("rm", implementacao::rm);
         mapaComandos.put("rmdir", implementacao::rm); // alias
         mapaComandos.put("touch", implementacao::touch);
-        mapaComandos.put("tree", implementacao::tree);
-        mapaComandos.put("clear", implementacao::clear);
+        /*mapaComandos.put("echo", implementacao::echo);
+        mapaComandos.put("rename", implementacao::rename);*/
 
-        // Comando de Ajuda
+        // Busca e Filtagem
+        /*mapaComandos.put("find", implementacao::dind);
+        mapaComandos.put("grep", implementacao::grep);*/
+
+        // Permissões e Propriedades
+        /*mapaComandos.put("chmod", implementacao::chmod);
+        mapaComandos.put("chown", implementacao::chown);*/
+
+        // Operações Avançadas
+        /*mapaComandos.put("cp", implementacao::cp);
+        mapaComandos.put("mv", implementacao::mv);
+        mapaComandos.put("zip", implementacao::zip);
+        mapaComandos.put("unzip", implementacao::unzip);*/
+
+        // Outros
+        mapaComandos.put("clear", implementacao::clear);
         mapaComandos.put("help", (fs, args) -> {
             System.out.println("Comandos disponíveis: " + mapaComandos.keySet());
+        });
+        mapaComandos.put("exit", (fs, args) -> {
+            this.executando = false;
+            System.out.println("Encerrando simulação...");
         });
 
     }
