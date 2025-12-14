@@ -70,8 +70,8 @@ public class Terminal {
         mapaComandos.put("pwd", implementacao::pwd);
         mapaComandos.put("ls", implementacao::ls);
         mapaComandos.put("tree", implementacao::tree);
-        /*mapaComandos.put("cat", implementacao::cat);
-        mapaComandos.put("history", implementacao::history);*/
+        mapaComandos.put("cat", implementacao::cat);
+        mapaComandos.put("history", implementacao::history);
 
         // Exibição Avançada
         /*mapaComandos.put("head", implementacao::head);
@@ -126,6 +126,10 @@ public class Terminal {
             String entrada = scanner.nextLine();
             if (entrada.trim().isEmpty()) continue;
 
+            // 1. Registrar no Histórico
+            sistemaArquivos.registrarComando(entrada);
+
+            // 2. Interpretar
             processarEntrada(entrada);
         }
         scanner.close();

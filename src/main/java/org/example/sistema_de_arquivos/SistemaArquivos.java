@@ -1,6 +1,7 @@
 package org.example.sistema_de_arquivos;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -182,24 +183,29 @@ public class SistemaArquivos {
     public String ls(String caminhoOpcional, boolean mostrarOcultos, boolean formatoLongo) {
         try {
             Diretorio alvo = diretorioAtual;
+            // Se passou caminho, resolve primeiro
             if (caminhoOpcional != null && !caminhoOpcional.isEmpty()) {
                 NoSistema no = resolverCaminho(caminhoOpcional);
-                if (no instanceof Diretorio) alvo = (Diretorio) no;
-                else return no.getNome(); // Se for arquivo, mostra só o nome
+                if (no instanceof Arquivo) {
+                    // Se for um arquivo, retorna somente os seus detalhes
+                    return formatarSaidaLs(Collections.singletonList(no), formatoLongo);
+                }
+                alvo = (Diretorio) no;
             }
+            // Pega os filhos
+            List<NoSistema> conteudo = new ArrayList<>(alvo.getFilhos().values());
 
-            if (alvo.getFilhos().isEmpty()) return "";
-
-            StringBuilder saida = new StringBuilder();
-            for (NoSistema filho : alvo.getFilhos().values()) {
-                if (filho instanceof Diretorio) saida.append("[D] ");
-                else saida.append("[A] ");
-                saida.append(filho.getNome()).append("  ");
+            // Filtra ocultos (começam com .) se a flag -a não estiver ativa
+            if (!mostrarOcultos) {
+                conteudo.removeIf(no -> no.getNome().startsWith("."));
             }
-            return saida.toString();
+            // Ordena alfabeticamente
+            conteudo.sort(Comparator.comparing(NoSistema::getNome));
+
+            return formatarSaidaLs(conteudo, formatoLongo);
 
         } catch (Exception e) {
-            return e.getMessage();
+            return "Erro: " + e.getMessage();
         }
     }
 
