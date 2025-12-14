@@ -74,10 +74,10 @@ public class Terminal {
         mapaComandos.put("history", implementacao::history);
 
         // Exibição Avançada
-        /*mapaComandos.put("head", implementacao::head);
+        mapaComandos.put("head", implementacao::head);
         mapaComandos.put("tail", implementacao::tail);
         mapaComandos.put("wc", implementacao::wc);
-        mapaComandos.put("stat", implementacao::stat);
+        /*mapaComandos.put("stat", implementacao::stat);
         mapaComandos.put("du", implementacao::du);*/
 
         // Criação e Remoção de Elementos
@@ -85,8 +85,8 @@ public class Terminal {
         mapaComandos.put("rm", implementacao::rm);
         mapaComandos.put("rmdir", implementacao::rm); // alias
         mapaComandos.put("touch", implementacao::touch);
-        /*mapaComandos.put("echo", implementacao::echo);
-        mapaComandos.put("rename", implementacao::rename);*/
+        mapaComandos.put("echo", implementacao::echo);
+        mapaComandos.put("rename", implementacao::rename);
 
         // Busca e Filtagem
         /*mapaComandos.put("find", implementacao::dind);
