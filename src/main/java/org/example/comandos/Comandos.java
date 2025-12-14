@@ -68,7 +68,7 @@ public class Comandos {
         }
     }
 
-    // [history] Novo
+    // [history]
     public void history(SistemaArquivos fs, List<String> args) {
         System.out.print(fs.getHistorico());
     }
@@ -99,6 +99,101 @@ public class Comandos {
             return;
         }
         System.out.println(fs.touch(args.getFirst()));
+    }
+
+    // [echo <texto >|>> arq>]
+    public void echo(SistemaArquivos fs, List<String> args) {
+        if (args.isEmpty()) {
+            System.out.println(); // echo vazio imprime linha em branco
+            return;
+        }
+        int indexRedirecionar = -1;
+        boolean append = false;
+
+        // Procura pelos operadores > ou >>
+        for (int i = 0; i < args.size(); i++) {
+            if (args.get(i).equals(">")) {
+                indexRedirecionar = i;
+                break;
+            } else if (args.get(i).equals(">>")) {
+                indexRedirecionar = i;
+                append = true;
+                break;
+            }
+        }
+
+        if (indexRedirecionar != -1) {
+            // Validação: Tem que ter arquivo depois do >
+            if (indexRedirecionar + 1 >= args.size()) {
+                System.out.println("Erro: Sintaxe inválida. Esperado arquivo após redirecionador.");
+                return;
+            }
+
+            String arquivoDestino = args.get(indexRedirecionar + 1);
+
+            // Junta tudo que vem antes do > como texto
+            String texto = String.join(" ", args.subList(0, indexRedirecionar));
+
+            // Chama o sistema para efetuar a escrita
+            String erro = fs.escreverNoArquivo(arquivoDestino, texto, append);
+            if (!erro.isEmpty()) System.out.println(erro);
+
+        } else {
+            // Apenas imprime o texto caso os operadores não tenham sido encontrados
+            System.out.println(String.join(" ", args));
+        }
+    }
+
+    // [rename <antigo> <novo>]
+    public void rename(SistemaArquivos fs, List<String> args) {
+        if (args.size() < 2) {
+            System.out.println("Uso: rename <nome_antigo> <novo_nome>");
+            return;
+        }
+        System.out.println(fs.rename(args.get(0), args.get(1)));
+    }
+
+    // [head <caminho> ou head -n 5 <arquivo>]
+    public void head(SistemaArquivos fs, List<String> args) {
+        tratarLeituraParcial(fs, args, true);
+    }
+
+    // [tail] tail <arquivo> ou tail -n 5 <arquivo>
+    public void tail(SistemaArquivos fs, List<String> args) {
+        tratarLeituraParcial(fs, args, false);
+    }
+
+    // Método auxiliar compartilhado para head e tail
+    private void tratarLeituraParcial(SistemaArquivos fs, List<String> args, boolean isHead) {
+        if (args.isEmpty()) return;
+
+        int linhas = 10; // Padrão Linux caso o paraâmetro não tenha sido informado
+        String arquivo;
+
+        // Parsing simples de flag -n
+        if (args.getFirst().equals("-n") && args.size() >= 3) {
+            try {
+                linhas = Integer.parseInt(args.get(1));
+                arquivo = args.get(2);
+            } catch (NumberFormatException e) {
+                System.out.println("Erro: Número de linhas inválido.");
+                return;
+            }
+        } else {
+            arquivo = args.getFirst();
+        }
+
+        if (isHead) System.out.print(fs.head(arquivo, linhas));
+        else System.out.print(fs.tail(arquivo, linhas));
+    }
+
+    // [wc] wc <arquivo>
+    public void wc(SistemaArquivos fs, List<String> args) {
+        if (args.isEmpty()) {
+            System.out.println("Uso: wc <arquivo>");
+            return;
+        }
+        System.out.println(fs.wc(args.getFirst()));
     }
 
     // clear (simulação, só adiciona uns espaços)

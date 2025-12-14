@@ -408,4 +408,137 @@ public class SistemaArquivos {
         }
     }
 
+    // ECHO (Sobrescreve > ou adiciona >> conteúdo em arquivos)
+    public String escreverNoArquivo(String caminho, String texto, boolean append) {
+        try {
+            // 1. Resolver o arquivo ou o diretório pai (caso o arquivo não exista)
+            NoSistema noAlvo = null;
+            try {
+                noAlvo = resolverCaminho(caminho);
+            } catch (Exception e) {
+                // Caso o arquivo não existe, tentamos cria-lo no diretório pai encontrado
+            }
+
+            Arquivo arquivo;
+            if (noAlvo != null) {
+                if (noAlvo instanceof Diretorio) {
+                    return "Erro: '" + noAlvo.getNome() + "' é um diretório.";
+                }
+                arquivo = (Arquivo) noAlvo;
+            } else {
+                // Não existe, encontra o pai e cria
+                String res = touch(caminho);
+                if (res.startsWith("Erro")) return res; // Falha ao criar com touch
+                arquivo = (Arquivo) resolverCaminho(caminho);
+            }
+            // 2. Escrever conteúdo
+            if (append) {
+                arquivo.appendConteudo(texto);
+            } else {
+                arquivo.setConteudo(texto);
+            }
+            return ""; // Sucesso (sem mensagem de erro)
+
+        } catch (Exception e) {
+            return "Erro ao escrever: " + e.getMessage();
+        }
+    }
+
+    // RENAME (Renomeia arquivos ou diretórios)
+    public String rename(String nomeAntigo, String novoNome) {
+        try {
+            // Validação simples do novo nome
+            if (novoNome.contains("/")) return "Erro: O novo nome não pode conter barras (use mv para mover).";
+
+            NoSistema alvo = resolverCaminho(nomeAntigo);
+            if (alvo == raiz) return "Erro: Não é possível renomear a raiz.";
+
+            Diretorio pai = alvo.getPai();
+
+            // Verifica se o nome já existe no diretório pai
+            if (pai.getFilho(novoNome) != null) {
+                return "Erro: Já existe um arquivo/diretório com o nome '" + novoNome + "'.";
+            }
+
+            // Remove a referência do arquivo no map a partir da chave antiga
+            pai.removerFilho(alvo.getNome());
+
+            // Atualiza o nome interno do objeto
+            alvo.setNome(novoNome);
+            pai.adicionarFilho(alvo);
+
+            return "Renomeado de '" + nomeAntigo + "' para '" + novoNome + "'.";
+
+        } catch (Exception e) {
+            return "Erro ao renomear: " + e.getMessage();
+        }
+    }
+
+    // HEAD (Exibe as primeiras N linhas de um arquivo)
+    public String head(String caminho, int linhas) {
+        try {
+            Arquivo arq = obterArquivoTexto(caminho);
+            String[] todasLinhas = arq.getConteudo().split("\n");
+
+            StringBuilder sb = new StringBuilder();
+            int limite = Math.min(linhas, todasLinhas.length);
+
+            for (int i = 0; i < limite; i++) {
+                sb.append(todasLinhas[i]).append("\n");
+            }
+            return sb.toString();
+
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    // TAIL (Exibe as últimas N linhas de um arquivo)
+    public String tail(String caminho, int linhas) {
+        try {
+            Arquivo arq = obterArquivoTexto(caminho);
+            String[] todasLinhas = arq.getConteudo().split("\n");
+
+            StringBuilder sb = new StringBuilder();
+            int inicio = Math.max(0, todasLinhas.length - linhas);
+
+            for (int i = inicio; i < todasLinhas.length; i++) {
+                sb.append(todasLinhas[i]).append("\n");
+            }
+            return sb.toString();
+
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    // WC (Conta as palavras de um arquivo)
+    public String wc(String caminho) {
+        try {
+            Arquivo arq = obterArquivoTexto(caminho);
+            String conteudo = arq.getConteudo();
+
+            int numLinhas = conteudo.isEmpty() ? 0 : conteudo.split("\n").length;
+            int numBytes = conteudo.length();
+
+            // Contar palavras (split por whitespace)
+            int numPalavras = 0;
+            if (!conteudo.trim().isEmpty()) {
+                numPalavras = conteudo.trim().split("\\s+").length;
+            }
+
+            return String.format("%d %d %d %s", numLinhas, numPalavras, numBytes, arq.getNome());
+
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    // Método auxiliar para validar se é arquivo
+    private Arquivo obterArquivoTexto(String caminho) throws Exception {
+        NoSistema no = resolverCaminho(caminho);
+        if (no instanceof Diretorio) throw new Exception("Erro: '" + caminho + "' é um diretório.");
+        return (Arquivo) no;
+    }
+
 }

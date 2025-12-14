@@ -24,6 +24,9 @@ public abstract class NoSistema {
     }
 
     public String getNome() { return nome; }
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
     public Diretorio getPai() { return pai; }
     public String getDataFormatada() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd HH:mm");
