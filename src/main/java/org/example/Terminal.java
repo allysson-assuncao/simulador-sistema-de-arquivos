@@ -26,28 +26,28 @@ public class Terminal {
     private void inicializarComandos() {
         /*
 
-        Navegação e Exibição Básica:(3/6) - Allysson
-        cd (por caminho, .. ou /: para a raiz) - incompleto: falta habilitar a navegação par a raiz
+        Navegação e Exibição Básica:(6/6) - Allysson
+        cd (por caminho, .. ou /: para a raiz) - completo
         pwd - completo
-        ls -l - incompleto: falta implementar a listagem detalhada com o parâmetro -l
+        ls -l - completo
         tree - completo
-        cat -
-        history -
+        cat - completo
+        history - completo
 
-        Exibição Avançada:(0/3) -
-        head - Allysson
-        tail - Allysson
-        wc - Allysson
+        Exibição Avançada:(3/5) -
+        head - Allysson - completo
+        tail - Allysson - completo
+        wc - Allysson - completo
         stat - Moisés
         du -  Moisés
 
-        Criação e Remoção de Elementos (Diretórios e Arquivos): (4/6) - Allysson
+        Criação e Remoção de Elementos (Diretórios e Arquivos): (6/6) - Allysson
         mkdir - completo
         rm - completo
         rmdir - completo (rm)
         touch - completo
-        echo (substituir ou atualizar, >, >>) -
-        rename -
+        echo (substituir ou atualizar, >, >>) - completo
+        rename - completo
 
         Busca e Filtagem: (0\2) - Moisés
         find -
