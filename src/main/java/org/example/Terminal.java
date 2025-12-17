@@ -26,6 +26,8 @@ public class Terminal {
     private void inicializarComandos() {
         /*
 
+        Total(15/25)
+
         Navegação e Exibição Básica:(6/6) - Allysson
         cd (por caminho, .. ou /: para a raiz) - completo
         pwd - completo
