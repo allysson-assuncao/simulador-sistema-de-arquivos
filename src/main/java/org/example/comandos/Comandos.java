@@ -201,4 +201,35 @@ public class Comandos {
         for(int i = 0; i < 50; i++) System.out.println();
     }
 
+    //    Permissões e Propriedades:
+
+
+
+    public void chmod(SistemaArquivos fs, List<String> args) {
+        if (args.size() < 2) {
+            System.out.println("Uso incorreto. Tente: chmod <codigo_octal> <caminho>");
+            // chmod 777 arquivo.txt
+            return;
+        }
+        // Pega os argumentos e chama o sistema
+        String codigo = args.get(0);
+        String caminho = args.get(1);
+
+        System.out.println(fs.chmod(codigo, caminho));
+    }
+
+    // [chown <novo_dono> <arquivo>]
+    public void chown(SistemaArquivos fs, List<String> args) {
+        if (args.size() < 2) {
+            System.out.println("Uso incorreto. Tente: chown <novo_usuario> <caminho>");
+            // chown admin arquivo.txt
+            return;
+        }
+        // Pega os argumentos e chama o sistema
+        String usuario = args.get(0);
+        String caminho = args.get(1);
+
+        System.out.println(fs.chown(usuario, caminho));
+    }
+
 }

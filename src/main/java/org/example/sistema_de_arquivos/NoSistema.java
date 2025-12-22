@@ -12,6 +12,7 @@ public abstract class NoSistema {
     protected String dono;
     protected LocalDateTime dataModificacao;
 
+
     public NoSistema(String nome, Diretorio pai) {
         // Validação de Integridade: Nome não pode conter '/'
         if (nome.contains("/")) {
@@ -19,7 +20,19 @@ public abstract class NoSistema {
         }
         this.nome = nome;
         this.pai = pai;
-        this.dono = "user"; // Padrão
+        this.dono = "user";
+        this.dataModificacao = LocalDateTime.now();
+        // Define um padrão inicial (rw-r--r--)
+        this.permissoes = "rw-r--r--";
+    }
+
+    public void setPermissoes(String permissoes) {
+        this.permissoes = permissoes;
+        this.dataModificacao = LocalDateTime.now();
+    }
+
+    public void setDono(String dono) {
+        this.dono = dono;
         this.dataModificacao = LocalDateTime.now();
     }
 
