@@ -24,6 +24,7 @@ public class Terminal {
     }
 
     private void inicializarComandos() {
+
         /*
 
         Navegação e Exibição Básica:(3/6) - Allysson

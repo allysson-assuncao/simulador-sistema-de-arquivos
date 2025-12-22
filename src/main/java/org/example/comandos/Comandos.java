@@ -106,4 +106,29 @@ public class Comandos {
         for(int i = 0; i < 50; i++) System.out.println();
     }
 
+    //    Permissões e Propriedades:
+    //        chmod -
+    //        chown -
+
+    public void chmod(SistemaArquivos fs, List<String> args){
+
+        /*
+
+        O comando chmod (change mode) no Linux altera as permissões de arquivos e diretórios, controlando quem pode
+        ler (r), escrever (w) ou executar (x) um item,
+        dividido entre usuário (u), grupo (g) e outros (o).
+
+         */
+
+        if(args.isEmpty()){
+            System.out.println();
+        }
+
+
+        return;
+    }
+
+
+
+
 }

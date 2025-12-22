@@ -23,6 +23,18 @@ public abstract class NoSistema {
         this.dataModificacao = LocalDateTime.now();
     }
 
+    public void setPermissoes(String permissoes) {
+        // Futuramente podemos adicionar validação aqui (se a string tem tamanho certo)
+        this.permissoes = permissoes;
+        this.dataModificacao = LocalDateTime.now(); // Atualiza o timestamp
+    }
+
+    public void setDono(String dono) {
+        this.dono = dono;
+        this.dataModificacao = LocalDateTime.now(); // Atualiza o timestamp
+    }
+
+
     public String getNome() { return nome; }
     public Diretorio getPai() { return pai; }
     public String getDataFormatada() {
