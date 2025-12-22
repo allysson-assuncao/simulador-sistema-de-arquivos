@@ -408,4 +408,73 @@ public class SistemaArquivos {
         }
     }
 
+    // PERMISSÕES E PROPRIEDADES
+    public String chmod(String codigoOctal, String caminho) {
+        try {
+            // Validação do formato (tem que ser 3 números de 0 a 7)
+            if (codigoOctal.length() != 3 || !codigoOctal.matches("[0-7]{3}")) {
+                return "Erro: Formato inválido. Use 3 dígitos octais (ex: 755, 777).";
+            }
+
+            // Busca o alvo
+            NoSistema alvo = resolverCaminho(caminho);
+
+            //  Monta a nova string de permissão
+            StringBuilder sb = new StringBuilder();
+
+            // O primeiro caractere indica se é diretório (d) ou arquivo (-)
+            if (alvo instanceof Diretorio) {
+                sb.append("d");
+            } else {
+                sb.append("-");
+            }
+
+            // Converte os 3 números para letras
+            sb.append(converterPermissaoOctal(codigoOctal.charAt(0))); // Dono
+            sb.append(converterPermissaoOctal(codigoOctal.charAt(1))); // Grupo
+            sb.append(converterPermissaoOctal(codigoOctal.charAt(2))); // Outros
+
+            // Aplica a mudança
+            alvo.setPermissoes(sb.toString());
+            return "Permissões de '" + alvo.getNome() + "' alteradas para " + sb.toString();
+
+        } catch (Exception e) {
+            return "Erro ao executar chmod: " + e.getMessage();
+        }
+    }
+
+    public String chown(String novoDono, String caminho) {
+        try {
+            // Busca o alvo
+            NoSistema alvo = resolverCaminho(caminho);
+
+            if (novoDono == null || novoDono.trim().isEmpty()) {
+                return "Erro: Nome de usuário inválido.";
+            }
+
+            // Aplica a mudança
+            String antigo = alvo.getDono();
+            alvo.setDono(novoDono);
+
+            return "Dono de '" + alvo.getNome() + "' alterado: " + antigo + " -> " + novoDono;
+
+        } catch (Exception e) {
+            return "Erro ao executar chown: " + e.getMessage();
+        }
+    }
+
+    // Método Auxiliar: Converte número ('7') para string ("rwx")
+    private String converterPermissaoOctal(char numero) {
+        switch (numero) {
+            case '0': return "---";
+            case '1': return "--x";
+            case '2': return "-w-";
+            case '3': return "-wx";
+            case '4': return "r--";
+            case '5': return "r-x";
+            case '6': return "rw-";
+            case '7': return "rwx";
+            default: return "---";
+        }
+    }
 }
