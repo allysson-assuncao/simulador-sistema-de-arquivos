@@ -10,4 +10,5 @@ public interface CommandExecutor {
     // 1. O sistema de arquivos (para ter acesso à árvore/memória do caminho atual)
     // 2. A lista de argumentos (strings após o comando)
     void executar(SistemaArquivos fs, List<String> args);
+
 }

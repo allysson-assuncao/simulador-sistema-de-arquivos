@@ -44,4 +44,5 @@ public class Diretorio extends NoSistema {
         return 4096; // Tamanho padrão de diretório em Linux (metadados), não a soma dos filhos
     }
 
+
 }
