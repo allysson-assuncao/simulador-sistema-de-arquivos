@@ -94,8 +94,8 @@ public class Terminal {
         mapaComandos.put("grep", implementacao::grep);*/
 
         // Permissões e Propriedades
-        /*mapaComandos.put("chmod", implementacao::chmod);
-        mapaComandos.put("chown", implementacao::chown);*/
+        mapaComandos.put("chmod", implementacao::chmod);
+        mapaComandos.put("chown", implementacao::chown);
 
         // Operações Avançadas
         /*mapaComandos.put("cp", implementacao::cp);
