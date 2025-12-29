@@ -700,4 +700,18 @@ public class SistemaArquivos {
             return "stat: " + e.getMessage() + "\n";
         }
     }
+
+    // DU
+    public String du(String caminho) {
+        try {
+            NoSistema no = resolverCaminho(caminho);
+
+            StringBuilder sb = new StringBuilder();
+            sb.append(no.getNome()).append("\t").append(no.getTamanho()).append(" bytes\n");
+
+            return sb.toString();
+        } catch (Exception e) {
+            return "du: " + e.getMessage() + "\n";
+        }
+    }
 }

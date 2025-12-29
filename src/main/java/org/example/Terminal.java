@@ -81,7 +81,7 @@ public class Terminal {
         mapaComandos.put("tail", implementacao::tail);
         mapaComandos.put("wc", implementacao::wc);
         mapaComandos.put("stat", implementacao::stat);
-        /*mapaComandos.put("du", implementacao::du);*/
+        mapaComandos.put("du", implementacao::du);
 
         // Criação e Remoção de Elementos
         mapaComandos.put("mkdir", implementacao::mkdir);

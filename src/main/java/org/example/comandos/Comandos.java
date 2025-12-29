@@ -267,4 +267,14 @@ public class Comandos {
 
         System.out.print(fs.grep(termo, arquivo));
     }
+
+    // [du <caminho>]
+    public void du(SistemaArquivos fs, List<String> args) {
+        if (args.isEmpty()) {
+            System.out.println("Uso: du <caminho>");
+            return;
+        }
+
+        System.out.print(fs.du(args.get(0)));
+    }
 }
