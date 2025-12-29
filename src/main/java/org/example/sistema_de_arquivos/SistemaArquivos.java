@@ -649,4 +649,26 @@ public class SistemaArquivos {
         String pai = montarCaminho(no.getPai());
         return (pai.equals("/") ? "" : pai) + "/" + no.getNome();
     }
+
+    // GREP
+    public String grep(String termo, String caminho) {
+        try {
+            Arquivo arq = obterArquivoTexto(caminho);
+            String conteudo = arq.getConteudo();
+
+            StringBuilder sb = new StringBuilder();
+            String[] linhas = conteudo.split("\n");
+
+            for (String linha : linhas) {
+                if (linha.contains(termo)) {
+                    sb.append(linha).append("\n");
+                }
+            }
+
+            return sb.toString();
+
+        } catch (Exception e) {
+            return "grep: " + e.getMessage() + "\n";
+        }
+    }
 }

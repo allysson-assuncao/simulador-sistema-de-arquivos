@@ -93,7 +93,7 @@ public class Terminal {
 
         // Busca e Filtagem
         mapaComandos.put("find", implementacao::find);
-        /*mapaComandos.put("grep", implementacao::grep);*/
+        mapaComandos.put("grep", implementacao::grep);
 
         // Permissões e Propriedades
         mapaComandos.put("chmod", implementacao::chmod);

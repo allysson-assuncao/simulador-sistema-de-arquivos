@@ -244,4 +244,17 @@ public class Comandos {
 
         System.out.print(fs.find(caminho, nome));
     }
+
+    // [grep <termo> <arquivo>]
+    public void grep(SistemaArquivos fs, List<String> args) {
+        if (args.size() < 2) {
+            System.out.println("Uso: grep <termo> <arquivo>");
+            return;
+        }
+
+        String termo = args.get(0);
+        String arquivo = args.get(1);
+
+        System.out.print(fs.grep(termo, arquivo));
+    }
 }
