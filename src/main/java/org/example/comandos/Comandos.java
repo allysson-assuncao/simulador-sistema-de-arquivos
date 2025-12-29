@@ -232,4 +232,16 @@ public class Comandos {
         System.out.println(fs.chown(usuario, caminho));
     }
 
+    // [find <caminho> -name <nome>]
+    public void find(SistemaArquivos fs, List<String> args) {
+        if (args.size() < 3 || !args.get(1).equals("-name")) {
+            System.out.println("Uso disponível: find <caminho> -name <nome>");
+            return;
+        }
+
+        String caminho = args.get(0);
+        String nome = args.get(2);
+
+        System.out.print(fs.find(caminho, nome));
+    }
 }

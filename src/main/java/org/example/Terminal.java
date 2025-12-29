@@ -92,8 +92,8 @@ public class Terminal {
         mapaComandos.put("rename", implementacao::rename);
 
         // Busca e Filtagem
-        /*mapaComandos.put("find", implementacao::dind);
-        mapaComandos.put("grep", implementacao::grep);*/
+        mapaComandos.put("find", implementacao::find);
+        /*mapaComandos.put("grep", implementacao::grep);*/
 
         // Permissões e Propriedades
         mapaComandos.put("chmod", implementacao::chmod);

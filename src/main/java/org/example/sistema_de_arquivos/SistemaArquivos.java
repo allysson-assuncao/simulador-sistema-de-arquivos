@@ -611,4 +611,42 @@ public class SistemaArquivos {
         }
     }
 
+    // FIND
+    public String find(String caminho, String nome) {
+        try {
+            NoSistema inicio = resolverCaminho(caminho);
+
+            if (!(inicio instanceof Diretorio dir)) {
+                return "find: '" + caminho + "': Não é um diretório\n";
+            }
+
+            StringBuilder resultado = new StringBuilder();
+            buscarRecursivo(dir, nome, resultado);
+            return resultado.toString();
+
+        } catch (Exception e) {
+            return "find: caminho inválido\n";
+        }
+    }
+
+    // FIND - Metodo auxiliar
+    private void buscarRecursivo(NoSistema no, String nomeBuscado, StringBuilder resultado) {
+        if (no.getNome().equals(nomeBuscado)) {
+            resultado.append(montarCaminho(no)).append("\n");
+        }
+
+        if (no instanceof Diretorio dir) {
+            for (NoSistema filho : dir.getFilhos().values()) {
+                buscarRecursivo(filho, nomeBuscado, resultado);
+            }
+        }
+    }
+
+    // Metodo auxiliar: monta caminho do nó até o topo
+    private String montarCaminho(NoSistema no) {
+        if (no == null || no.getPai() == null) return "/";
+
+        String pai = montarCaminho(no.getPai());
+        return (pai.equals("/") ? "" : pai) + "/" + no.getNome();
+    }
 }
