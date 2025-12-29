@@ -671,4 +671,33 @@ public class SistemaArquivos {
             return "grep: " + e.getMessage() + "\n";
         }
     }
+
+    // STAT
+    public String stat(String caminho) {
+        try {
+            NoSistema no = resolverCaminho(caminho);
+
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("  File: ").append(no.getNome()).append("\n");
+            sb.append("  Path: ").append(montarCaminho(no)).append("\n");
+
+            if (no instanceof Diretorio) {
+                sb.append("  Type: Directory\n");
+                sb.append("  Size: 4096 bytes\n"); // tamanho fixo do diretório para fins didáticos
+            } else {
+                sb.append("  Type: Regular File\n");
+                sb.append("  Size: ").append(no.getTamanho()).append(" bytes\n");
+            }
+
+            sb.append("  Owner: ").append(no.getDono()).append("\n");
+            sb.append("  Access: ").append(no.getPermissoes()).append("\n");
+            sb.append("  Modify: ").append(no.getDataFormatada()).append("\n");
+
+            return sb.toString();
+
+        } catch (Exception e) {
+            return "stat: " + e.getMessage() + "\n";
+        }
+    }
 }

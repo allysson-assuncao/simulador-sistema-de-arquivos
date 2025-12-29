@@ -196,6 +196,16 @@ public class Comandos {
         System.out.println(fs.wc(args.getFirst()));
     }
 
+    // [stat <caminho>]
+    public void stat(SistemaArquivos fs, List<String> args) {
+        if (args.isEmpty()) {
+            System.out.println("Uso: stat <caminho>");
+            return;
+        }
+
+        System.out.print(fs.stat(args.getFirst()));
+    }
+
     // clear (simulação, só adiciona uns espaços)
     public void clear(SistemaArquivos fs, List<String> args) {
         for(int i = 0; i < 50; i++) System.out.println();
