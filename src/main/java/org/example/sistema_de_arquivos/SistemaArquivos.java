@@ -11,6 +11,7 @@ public class SistemaArquivos {
     private Diretorio raiz;
     private Diretorio diretorioAtual;
     private List<String> historicoComandos;
+    private String usuarioLogado = "user";
 
     public SistemaArquivos() {
         // Raiz é um caso especial: nome "/" e pai null
@@ -151,6 +152,30 @@ public class SistemaArquivos {
         return atualNavegacao;
     }
 
+    // Verifica se o usuário atual tem permissão para realizar a ação
+    private boolean verificarPermissao(NoSistema no, char modo) {
+        // Se for o superusuário simulado 'root', tudo é permitido
+        if (usuarioLogado.equals("root")) return true;
+
+        String perms = no.getPermissoes();
+        // Exemplo: -rwxr--r--
+        // Índices: 0123456789
+        // Dono: 1,2,3 | Grupo: 4,5,6 | Outros: 7,8,9
+
+        boolean souDono = no.getDono().equals(this.usuarioLogado);
+        int indiceBase = souDono ? 1 : 7; // Pula para o bloco de 'Outros' se não for dono
+
+        // Ajusta o índice baseado no que queremos verificar
+        int indiceVerificacao = indiceBase;
+        if (modo == 'w') indiceVerificacao += 1;
+        else if (modo == 'x') indiceVerificacao += 2;
+        // Se for 'r', mantém o indiceBase
+
+        // Verifica se o caractere na posição esperada bate com o modo solicitado
+        // Ex: Se quero escrever ('w'), espero encontrar 'w' na string, e não '-'
+        return perms.charAt(indiceVerificacao) == modo;
+    }
+
     // PWD (Exibe o caminho atual completo)
     public String getCaminhoCompleto() {
         if (diretorioAtual == raiz) return "/";
@@ -168,12 +193,14 @@ public class SistemaArquivos {
     public String cd(String caminho) {
         try {
             NoSistema alvo = resolverCaminho(caminho);
-            if (alvo instanceof Diretorio) {
-                this.diretorioAtual = (Diretorio) alvo;
-                return "";
-            } else {
+            if (!(alvo instanceof Diretorio)) {
                 return "Erro: '" + alvo.getNome() + "' não é um diretório.";
             }
+            if (!verificarPermissao(alvo, 'x')) {
+                return "Permissão negada: Não é possível acessar '" + alvo.getNome() + "'";
+            }
+            this.diretorioAtual = (Diretorio) alvo;
+            return "";
         } catch (Exception e) {
             return e.getMessage();
         }
@@ -186,12 +213,21 @@ public class SistemaArquivos {
             // Se passou caminho, resolve primeiro
             if (caminhoOpcional != null && !caminhoOpcional.isEmpty()) {
                 NoSistema no = resolverCaminho(caminhoOpcional);
-                if (no instanceof Arquivo) {
-                    // Se for um arquivo, retorna somente os seus detalhes
+                // Se for diretório, precisa de Leitura para listar conteúdo
+                if (no instanceof Diretorio) {
+                    if (!verificarPermissao(no, 'r')) {
+                        return "Permissão negada: Não é possível ler o diretório '" + no.getNome() + "'";
+                    }
+                    alvo = (Diretorio) no;
+                } else {
+                    // Se for arquivo, não precisa de 'r' no arquivo para ver que ele existe,  apenas 'x' no diretório pai (que o resolverCaminho já atravessou)
                     return formatarSaidaLs(Collections.singletonList(no), formatoLongo);
                 }
-                alvo = (Diretorio) no;
             }
+            if (!verificarPermissao(alvo, 'r')) {
+                return "Permissão negada: Não é possível listar o diretório atual.";
+            }
+
             // Pega os filhos
             List<NoSistema> conteudo = new ArrayList<>(alvo.getFilhos().values());
 
@@ -275,8 +311,9 @@ public class SistemaArquivos {
     public String cat(String caminho) {
         try {
             NoSistema no = resolverCaminho(caminho);
-            if (no instanceof Diretorio) {
-                return "cat: " + no.getNome() + ": É um diretório";
+            if (no instanceof Diretorio) return "cat: " + no.getNome() + ": É um diretório";
+            if (!verificarPermissao(no, 'r')) {
+                return "Permissão negada: Ler '" + no.getNome() + "'";
             }
             return ((Arquivo) no).getConteudo();
         } catch (Exception e) {
@@ -419,13 +456,30 @@ public class SistemaArquivos {
                 // Caso o arquivo não existe, tentamos cria-lo no diretório pai encontrado
             }
 
-            Arquivo arquivo;
+            Arquivo arquivo = null;
             if (noAlvo != null) {
-                if (noAlvo instanceof Diretorio) {
-                    return "Erro: '" + noAlvo.getNome() + "' é um diretório.";
+                // Arquivo existente: Precisa de permissão de escrita no arquivo
+                if (!verificarPermissao(noAlvo, 'w')) {
+                    return "Permissão negada: Escrever em '" + noAlvo.getNome() + "'";
                 }
+                if (noAlvo instanceof Diretorio) return "Erro: É um diretório.";
                 arquivo = (Arquivo) noAlvo;
+
+                Arquivo arq = (Arquivo) noAlvo;
+                if (append) arq.appendConteudo(texto);
+                else arq.setConteudo(texto);
+
             } else {
+                // Arquivo novo: Precisa de permissão de Escrita no diretório PAI
+                String caminhoPai = "/";
+                int lastSlash = caminho.lastIndexOf('/');
+                if (lastSlash != -1) caminhoPai = caminho.substring(0, lastSlash);
+                if (caminhoPai.isEmpty()) caminhoPai = "/";
+
+                NoSistema pai = resolverCaminho(caminhoPai);
+                if (!verificarPermissao(pai, 'w')) {
+                    return "Permissão negada: Criar arquivo em '" + pai.getNome() + "'";
+                }
                 // Não existe, encontra o pai e cria
                 String res = touch(caminho);
                 if (res.startsWith("Erro")) return res; // Falha ao criar com touch
@@ -599,15 +653,24 @@ public class SistemaArquivos {
     // Método Auxiliar: Converte número ('7') para string ("rwx")
     private String converterPermissaoOctal(char numero) {
         switch (numero) {
-            case '0': return "---";
-            case '1': return "--x";
-            case '2': return "-w-";
-            case '3': return "-wx";
-            case '4': return "r--";
-            case '5': return "r-x";
-            case '6': return "rw-";
-            case '7': return "rwx";
-            default: return "---";
+            case '0':
+                return "---";
+            case '1':
+                return "--x";
+            case '2':
+                return "-w-";
+            case '3':
+                return "-wx";
+            case '4':
+                return "r--";
+            case '5':
+                return "r-x";
+            case '6':
+                return "rw-";
+            case '7':
+                return "rwx";
+            default:
+                return "---";
         }
     }
 
