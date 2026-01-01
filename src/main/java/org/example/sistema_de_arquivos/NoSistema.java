@@ -12,6 +12,8 @@ public abstract class NoSistema {
     protected String dono;
     protected LocalDateTime dataModificacao;
 
+    public static final String TIPO_ARQUIVO = "ARQUIVO";
+    public static final String TIPO_DIRETORIO = "DIRETORIO";
 
     public NoSistema(String nome, Diretorio pai) {
         // Validação de Integridade: Nome não pode conter '/'
@@ -49,5 +51,14 @@ public abstract class NoSistema {
     public String getDono() { return dono; }
 
     public abstract String getTipo(); // Diretorio ou arquivo
+
+    public boolean isDiretorio() {
+        return getTipo().equals(TIPO_DIRETORIO);
+    }
+
+    public boolean isArquivo() {
+        return getTipo().equals(TIPO_ARQUIVO);
+    }
+
     public abstract int getTamanho(); // Em bytes (varia entre arquivos e diretórios)
 }

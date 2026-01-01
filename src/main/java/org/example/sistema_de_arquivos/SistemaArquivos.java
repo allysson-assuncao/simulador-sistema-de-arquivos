@@ -86,7 +86,7 @@ public class SistemaArquivos {
     private void escreverNoArquivo(String caminho, String texto) {
         try {
             NoSistema no = resolverCaminho(caminho);
-            if (no instanceof Arquivo) {
+            if (no.isArquivo()) {
                 ((Arquivo) no).setConteudo(texto);
             }
         } catch (Exception e) {
@@ -138,7 +138,7 @@ public class SistemaArquivos {
             }
 
             // Se tem um caminho no meio do caminho: erro
-            if (proximo instanceof Arquivo) {
+            if (proximo.isArquivo()) {
                 if (parte.equals(partes[partes.length - 1])) {
                     return proximo;
                 }
@@ -193,7 +193,7 @@ public class SistemaArquivos {
     public String cd(String caminho) {
         try {
             NoSistema alvo = resolverCaminho(caminho);
-            if (!(alvo instanceof Diretorio)) {
+            if (!(alvo.isDiretorio())) {
                 return "Erro: '" + alvo.getNome() + "' não é um diretório.";
             }
             if (!verificarPermissao(alvo, 'x')) {
@@ -214,7 +214,7 @@ public class SistemaArquivos {
             if (caminhoOpcional != null && !caminhoOpcional.isEmpty()) {
                 NoSistema no = resolverCaminho(caminhoOpcional);
                 // Se for diretório, precisa de Leitura para listar conteúdo
-                if (no instanceof Diretorio) {
+                if (no.isDiretorio()) {
                     if (!verificarPermissao(no, 'r')) {
                         return "Permissão negada: Não é possível ler o diretório '" + no.getNome() + "'";
                     }
@@ -278,7 +278,7 @@ public class SistemaArquivos {
         } else {
             try {
                 NoSistema no = resolverCaminho(caminho);
-                if (no instanceof Diretorio) {
+                if (no.isDiretorio()) {
                     listarRecursivo((Diretorio) no, "", sb);
                 }
             } catch (Exception e) {
@@ -301,7 +301,7 @@ public class SistemaArquivos {
             sb.append(isLast ? "└── " : "├── ");
             sb.append(no.getNome()).append("\n");
 
-            if (no instanceof Diretorio) {
+            if (no.isDiretorio()) {
                 listarRecursivo((Diretorio) no, prefixo + (isLast ? "    " : "│   "), sb);
             }
         }
@@ -311,7 +311,7 @@ public class SistemaArquivos {
     public String cat(String caminho) {
         try {
             NoSistema no = resolverCaminho(caminho);
-            if (no instanceof Diretorio) return "cat: " + no.getNome() + ": É um diretório";
+            if (no.isDiretorio()) return "cat: " + no.getNome() + ": É um diretório";
             if (!verificarPermissao(no, 'r')) {
                 return "Permissão negada: Ler '" + no.getNome() + "'";
             }
@@ -362,7 +362,7 @@ public class SistemaArquivos {
                 NoSistema noPai = resolverCaminho(caminhoPai);
 
                 if (noPai == null) return "Erro: Caminho base não encontrado.";
-                if (!(noPai instanceof Diretorio)) return "Erro: '" + caminhoPai + "' não é um diretório.";
+                if (!(noPai.isDiretorio())) return "Erro: '" + caminhoPai + "' não é um diretório.";
 
                 paiAlvo = (Diretorio) noPai;
             }
@@ -392,7 +392,7 @@ public class SistemaArquivos {
 
             Diretorio pai = alvo.getPai();
 
-            if (alvo instanceof Diretorio) {
+            if (alvo.isDiretorio()) {
                 if (((Diretorio) alvo).temFilhos()) {
                     return "Erro: O diretório não está vazio (use rm -rf para remover tudo de forma recursiva).";
                 }
@@ -423,14 +423,14 @@ public class SistemaArquivos {
                 if (caminhoPai.isEmpty()) caminhoPai = "/";
 
                 NoSistema noPai = resolverCaminho(caminhoPai);
-                if (!(noPai instanceof Diretorio)) return "Erro: Caminho inválido.";
+                if (!(noPai.isDiretorio())) return "Erro: Caminho inválido.";
                 paiAlvo = (Diretorio) noPai;
             }
 
             // Verifica se já existe
             NoSistema existente = paiAlvo.getFilho(nomeArquivo);
             if (existente != null) {
-                if (existente instanceof Diretorio) return "Erro: Já existe um diretório com esse nome.";
+                if (existente.isDiretorio()) return "Erro: Já existe um diretório com esse nome.";
                 // Simulando a atualização do timestamp
                 return "Arquivo '" + nomeArquivo + "' atualizado.";
             }
@@ -462,7 +462,7 @@ public class SistemaArquivos {
                 if (!verificarPermissao(noAlvo, 'w')) {
                     return "Permissão negada: Escrever em '" + noAlvo.getNome() + "'";
                 }
-                if (noAlvo instanceof Diretorio) return "Erro: É um diretório.";
+                if (noAlvo.isDiretorio()) return "Erro: É um diretório.";
                 arquivo = (Arquivo) noAlvo;
 
                 Arquivo arq = (Arquivo) noAlvo;
@@ -591,7 +591,7 @@ public class SistemaArquivos {
     // Método auxiliar para validar se é arquivo
     private Arquivo obterArquivoTexto(String caminho) throws Exception {
         NoSistema no = resolverCaminho(caminho);
-        if (no instanceof Diretorio) throw new Exception("Erro: '" + caminho + "' é um diretório.");
+        if (no.isDiretorio()) throw new Exception("Erro: '" + caminho + "' é um diretório.");
         return (Arquivo) no;
     }
 
@@ -610,7 +610,7 @@ public class SistemaArquivos {
             StringBuilder sb = new StringBuilder();
 
             // O primeiro caractere indica se é diretório (d) ou arquivo (-)
-            if (alvo instanceof Diretorio) {
+            if (alvo.isDiretorio()) {
                 sb.append("d");
             } else {
                 sb.append("-");
@@ -679,6 +679,7 @@ public class SistemaArquivos {
         try {
             NoSistema inicio = resolverCaminho(caminho);
 
+            // Substituir isso por isDiretorio de alguma forma que não comprometa a lógica
             if (!(inicio instanceof Diretorio dir)) {
                 return "find: '" + caminho + "': Não é um diretório\n";
             }
@@ -698,6 +699,7 @@ public class SistemaArquivos {
             resultado.append(montarCaminho(no)).append("\n");
         }
 
+        // Substituir isso por isDiretorio de alguma forma que não comprometa a lógica
         if (no instanceof Diretorio dir) {
             for (NoSistema filho : dir.getFilhos().values()) {
                 buscarRecursivo(filho, nomeBuscado, resultado);
@@ -745,7 +747,7 @@ public class SistemaArquivos {
             sb.append("  File: ").append(no.getNome()).append("\n");
             sb.append("  Path: ").append(montarCaminho(no)).append("\n");
 
-            if (no instanceof Diretorio) {
+            if (no.isDiretorio()) {
                 sb.append("  Type: Directory\n");
                 sb.append("  Size: 4096 bytes\n"); // tamanho fixo do diretório para fins didáticos
             } else {
