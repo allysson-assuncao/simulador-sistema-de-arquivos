@@ -367,6 +367,10 @@ public class SistemaArquivos {
                 paiAlvo = (Diretorio) noPai;
             }
 
+            if (!verificarPermissao(paiAlvo, 'w')) {
+                return "Permissão negada: Não é possível criar '" + nomeNovoDir + "' em '" + paiAlvo.getNome() + "'.";
+            }
+
             // Validação: Já existe?
             if (paiAlvo.getFilho(nomeNovoDir) != null) {
                 return "Erro: Já existe algo com o nome '" + nomeNovoDir + "'.";
@@ -374,6 +378,7 @@ public class SistemaArquivos {
 
             // Criação e ligação
             Diretorio novo = new Diretorio(nomeNovoDir, paiAlvo);
+            novo.setDono(this.usuarioLogado);
             paiAlvo.adicionarFilho(novo);
             return "Diretório '" + nomeNovoDir + "' criado com sucesso.";
 
@@ -391,6 +396,10 @@ public class SistemaArquivos {
             if (alvo == raiz) return "Erro: Não é possível remover a raiz.";
 
             Diretorio pai = alvo.getPai();
+
+            if (!verificarPermissao(pai, 'w')) {
+                return "Permissão negada: Não é possível remover '" + alvo.getNome() + "' (sem permissão de escrita no diretório pai).";
+            }
 
             if (alvo.isDiretorio()) {
                 if (((Diretorio) alvo).temFilhos()) {
@@ -427,16 +436,22 @@ public class SistemaArquivos {
                 paiAlvo = (Diretorio) noPai;
             }
 
+            if (!verificarPermissao(paiAlvo, 'w')) {
+                return "Permissão negada: Criar arquivo em '" + paiAlvo.getNome() + "'.";
+            }
+
             // Verifica se já existe
             NoSistema existente = paiAlvo.getFilho(nomeArquivo);
             if (existente != null) {
                 if (existente.isDiretorio()) return "Erro: Já existe um diretório com esse nome.";
                 // Simulando a atualização do timestamp
+                existente.setDono(this.usuarioLogado);
                 return "Arquivo '" + nomeArquivo + "' atualizado.";
             }
 
             // Criação do arquivo
             Arquivo novoArq = new Arquivo(nomeArquivo, paiAlvo);
+            novoArq.setDono(this.usuarioLogado);
             paiAlvo.adicionarFilho(novoArq);
             return "Arquivo '" + nomeArquivo + "' criado.";
 
@@ -472,8 +487,8 @@ public class SistemaArquivos {
             } else {
                 // Arquivo novo: Precisa de permissão de Escrita no diretório PAI
                 String caminhoPai = "/";
-                int lastSlash = caminho.lastIndexOf('/');
-                if (lastSlash != -1) caminhoPai = caminho.substring(0, lastSlash);
+                int indiceUltimaBarra = caminho.lastIndexOf('/');
+                if (indiceUltimaBarra != -1) caminhoPai = caminho.substring(0, indiceUltimaBarra);
                 if (caminhoPai.isEmpty()) caminhoPai = "/";
 
                 NoSistema pai = resolverCaminho(caminhoPai);
