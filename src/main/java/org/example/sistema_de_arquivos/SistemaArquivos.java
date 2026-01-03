@@ -717,27 +717,23 @@ public class SistemaArquivos {
 
     // FIND - Metodo auxiliar
     private void buscarRecursivo(NoSistema no, String nomeBuscado, StringBuilder resultado) {
-
         boolean dono = souDono(no);
+        boolean podeLer = temPermissao(no, 'r', dono);
 
-        // Se for diretório e não tiver permissão de leitura, mostra erro e não entra
-        if (no.isDiretorio() && !temPermissao(no, 'r', dono)) {
-            resultado.append("find: '")
-                    .append(montarCaminho(no))
-                    .append("': Permissão negada\n");
-            return;
-        }
-
-        // Se o nome bate, lista (arquivo ou diretório)
         if (no.getNome().equals(nomeBuscado)) {
             resultado.append(montarCaminho(no)).append("\n");
         }
 
-        // Desce recursivamente apenas se for diretório acessível
         if (no.isDiretorio()) {
-            Diretorio dir = (Diretorio) no;
-            for (NoSistema filho : dir.getFilhos().values()) {
-                buscarRecursivo(filho, nomeBuscado, resultado);
+            if (podeLer) {
+                Diretorio dir = (Diretorio) no;
+                for (NoSistema filho : dir.getFilhos().values()) {
+                    buscarRecursivo(filho, nomeBuscado, resultado);
+                }
+            } else {
+                resultado.append("find: '")
+                        .append(montarCaminho(no))
+                        .append("': Permissão negada\n");
             }
         }
     }
