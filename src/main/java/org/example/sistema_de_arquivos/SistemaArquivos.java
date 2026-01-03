@@ -806,8 +806,12 @@ public class SistemaArquivos {
         try {
             String alvo = (caminho == null || caminho.isEmpty()) ? "." : caminho;
             NoSistema no = resolverCaminho(alvo);
-            StringBuilder sb = new StringBuilder();
 
+            if (!verificarPermissao(no, 'r')) {
+                return "du: permissão negada para '" + alvo + "'\n";
+            }
+
+            StringBuilder sb = new StringBuilder();
             gerarSaidaDuRecursivo(no, sb, alvo);
             return sb.toString();
         } catch (Exception e) {
@@ -818,20 +822,22 @@ public class SistemaArquivos {
     // DU: Metodo auxiliar para imprimir diretorios recursivamente
     private void gerarSaidaDuRecursivo(NoSistema no, StringBuilder sb, String caminhoExibicao) {
         if (no instanceof Diretorio) {
-            Diretorio dir = (Diretorio) no;
+            if (verificarPermissao(no, 'r') && verificarPermissao(no, 'x')) {
+                Diretorio dir = (Diretorio) no;
 
-            for (NoSistema filho : dir.getFilhos().values()) {
-                if (filho.isDiretorio()) {
-                    // Navegação recursiva: entra em cada subdiretório encontrado
-                    String caminhoFilho = caminhoExibicao + "/" + filho.getNome();
-                    gerarSaidaDuRecursivo(filho, sb, caminhoFilho);
+                for (NoSistema filho : dir.getFilhos().values()) {
+                    if (filho.isDiretorio()) {
+                        String separador = caminhoExibicao.endsWith("/") ? "" : "/";
+                        String caminhoFilho = caminhoExibicao + separador + filho.getNome();
+                        gerarSaidaDuRecursivo(filho, sb, caminhoFilho);
+                    }
                 }
+            } else {
+                sb.append("du: não foi possível ler diretório '").append(caminhoExibicao).append("': Permissão negada\n");
             }
 
-            // Padrão Linux: Exibe apenas o nó se ele for um diretório
             sb.append(no.getTamanho()).append("\t").append(caminhoExibicao).append("\n");
-        } else if (no.isArquivo() && !caminhoExibicao.contains("/")) {
-            // Caso o usuário execute 'du' diretamente em um arquivo específico
+        } else if (no.isArquivo()) {
             sb.append(no.getTamanho()).append("\t").append(caminhoExibicao).append("\n");
         }
     }
