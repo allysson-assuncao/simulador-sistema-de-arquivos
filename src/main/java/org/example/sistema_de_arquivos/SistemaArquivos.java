@@ -694,13 +694,12 @@ public class SistemaArquivos {
         try {
             NoSistema inicio = resolverCaminho(caminho);
 
-            // Substituir isso por isDiretorio de alguma forma que não comprometa a lógica
-            if (!(inicio instanceof Diretorio dir)) {
+            if (!inicio.isDiretorio()) {
                 return "find: '" + caminho + "': Não é um diretório\n";
             }
 
             StringBuilder resultado = new StringBuilder();
-            buscarRecursivo(dir, nome, resultado);
+            buscarRecursivo(inicio, nome, resultado);
             return resultado.toString();
 
         } catch (Exception e) {
@@ -710,12 +709,23 @@ public class SistemaArquivos {
 
     // FIND - Metodo auxiliar
     private void buscarRecursivo(NoSistema no, String nomeBuscado, StringBuilder resultado) {
+
+        // Se for diretório e não tiver permissão, mostra erro e não entra
+        if (no.isDiretorio() && !no.getDono().equals(usuarioLogado)) {
+            resultado.append("find: '")
+                    .append(montarCaminho(no))
+                    .append("': Permissão negada\n");
+            return;
+        }
+
+        // Se o nome bate, lista (arquivo ou diretório)
         if (no.getNome().equals(nomeBuscado)) {
             resultado.append(montarCaminho(no)).append("\n");
         }
 
-        // Substituir isso por isDiretorio de alguma forma que não comprometa a lógica
-        if (no instanceof Diretorio dir) {
+        // Desce recursivamente apenas se for diretório acessível
+        if (no.isDiretorio()) {
+            Diretorio dir = (Diretorio) no;
             for (NoSistema filho : dir.getFilhos().values()) {
                 buscarRecursivo(filho, nomeBuscado, resultado);
             }
