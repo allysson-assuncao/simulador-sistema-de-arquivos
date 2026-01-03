@@ -804,14 +804,35 @@ public class SistemaArquivos {
     // DU
     public String du(String caminho) {
         try {
-            NoSistema no = resolverCaminho(caminho);
-
+            String alvo = (caminho == null || caminho.isEmpty()) ? "." : caminho;
+            NoSistema no = resolverCaminho(alvo);
             StringBuilder sb = new StringBuilder();
-            sb.append(no.getNome()).append("\t").append(no.getTamanho()).append(" bytes\n");
 
+            gerarSaidaDuRecursivo(no, sb, alvo);
             return sb.toString();
         } catch (Exception e) {
             return "du: " + e.getMessage() + "\n";
+        }
+    }
+
+    // DU: Metodo auxiliar para imprimir diretorios recursivamente
+    private void gerarSaidaDuRecursivo(NoSistema no, StringBuilder sb, String caminhoExibicao) {
+        if (no instanceof Diretorio) {
+            Diretorio dir = (Diretorio) no;
+
+            for (NoSistema filho : dir.getFilhos().values()) {
+                if (filho.isDiretorio()) {
+                    // Navegação recursiva: entra em cada subdiretório encontrado
+                    String caminhoFilho = caminhoExibicao + "/" + filho.getNome();
+                    gerarSaidaDuRecursivo(filho, sb, caminhoFilho);
+                }
+            }
+
+            // Padrão Linux: Exibe apenas o nó se ele for um diretório
+            sb.append(no.getTamanho()).append("\t").append(caminhoExibicao).append("\n");
+        } else if (no.isArquivo() && !caminhoExibicao.contains("/")) {
+            // Caso o usuário execute 'du' diretamente em um arquivo específico
+            sb.append(no.getTamanho()).append("\t").append(caminhoExibicao).append("\n");
         }
     }
 }
