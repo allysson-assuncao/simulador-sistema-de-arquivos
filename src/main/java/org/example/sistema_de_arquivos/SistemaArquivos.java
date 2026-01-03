@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 //Classe responsável por gerenciar o sistema de arquivos.
 public class SistemaArquivos {
@@ -12,6 +13,9 @@ public class SistemaArquivos {
     private Diretorio diretorioAtual;
     private List<String> historicoComandos;
     private String usuarioLogado = "user";
+
+    // Padrão Linux seguro: Letras, números, ponto, traço e underscore.
+    private static final Pattern PADRAO_NOME = Pattern.compile("^[a-zA-Z0-9._-]+$");
 
     public SistemaArquivos() {
         // Raiz é um caso especial: nome "/" e pai null
@@ -91,6 +95,13 @@ public class SistemaArquivos {
             }
         } catch (Exception e) {
             System.err.println(e.getMessage());
+        }
+    }
+
+    private void validarNome(String nome) throws IllegalArgumentException {
+        if (nome == null || nome.isEmpty()) throw new IllegalArgumentException("Nome não pode ser vazio.");
+        if (!PADRAO_NOME.matcher(nome).matches()) {
+            throw new IllegalArgumentException("Nome inválido: '" + nome + "'. Use apenas letras, números, ponto (.), traço (-) ou underscore (_).");
         }
     }
 
@@ -278,27 +289,37 @@ public class SistemaArquivos {
     }
 
     // Tree (Exibe a arvore de diretórios a partir de um caminho de forma recursivo)
-    public String tree(String caminho) {
+    public String tree(String caminho, boolean mostrarOcultos) {
         StringBuilder sb = new StringBuilder();
         sb.append(".\n");
         if (caminho.isEmpty()) {
-            listarRecursivo(diretorioAtual, "", sb);
+            listarRecursivo(diretorioAtual, "", sb, mostrarOcultos);
         } else {
             try {
                 NoSistema no = resolverCaminho(caminho);
                 if (no.isDiretorio()) {
-                    listarRecursivo((Diretorio) no, "", sb);
+                    listarRecursivo((Diretorio) no, "", sb, mostrarOcultos);
                 }
             } catch (Exception e) {
-                listarRecursivo(diretorioAtual, "", sb);
+                listarRecursivo(diretorioAtual, "", sb, mostrarOcultos);
             }
         }
         return sb.toString();
     }
 
-    private void listarRecursivo(Diretorio dir, String prefixo, StringBuilder sb) {
+    private void listarRecursivo(Diretorio dir, String prefixo, StringBuilder sb, boolean mostrarOcultos) {
+        if (!verificarPermissao(dir, 'r')) {
+            return;
+        }
         List<NoSistema> filhos = new ArrayList<>(dir.getFilhos().values());
         // Ordenar para facilitar a leitura e identificação
+        filhos.sort(Comparator.comparing(NoSistema::getNome));
+
+        // [1] Filtra ocultos
+        if (!mostrarOcultos) {
+            filhos.removeIf(no -> no.getNome().startsWith("."));
+        }
+
         filhos.sort(Comparator.comparing(NoSistema::getNome));
 
         for (int i = 0; i < filhos.size(); i++) {
@@ -307,10 +328,24 @@ public class SistemaArquivos {
 
             sb.append(prefixo);
             sb.append(isLast ? "└── " : "├── ");
-            sb.append(no.getNome()).append("\n");
+            sb.append(no.getNome());
 
+            // Verifica se é diretório para continuar descendo
             if (no.isDiretorio()) {
-                listarRecursivo((Diretorio) no, prefixo + (isLast ? "    " : "│   "), sb);
+                Diretorio subDir = (Diretorio) no;
+
+                // [2] Check antecipado: Se não tem permissão, avisa na frente do nome
+                if (!verificarPermissao(subDir, 'r')) {
+                    sb.append(" [Sem Permissão]");
+                    sb.append("\n"); // Fecha a linha
+                    // Não chama recursivo
+                } else {
+                    sb.append("\n"); // Fecha a linha normal
+                    // Chama recursivo
+                    listarRecursivo(subDir, prefixo + (isLast ? "    " : "│   "), sb, mostrarOcultos);
+                }
+            } else {
+                sb.append("\n");
             }
         }
     }
@@ -375,6 +410,8 @@ public class SistemaArquivos {
                 paiAlvo = (Diretorio) noPai;
             }
 
+            validarNome(nomeNovoDir);
+
             if (!verificarPermissao(paiAlvo, 'w')) {
                 return "Permissão negada: Não é possível criar '" + nomeNovoDir + "' em '" + paiAlvo.getNome() + "'.";
             }
@@ -390,6 +427,8 @@ public class SistemaArquivos {
             paiAlvo.adicionarFilho(novo);
             return "Diretório '" + nomeNovoDir + "' criado com sucesso.";
 
+        } catch (IllegalArgumentException e) {
+            return "Erro: " + e.getMessage();
         } catch (Exception e) {
             return "Erro ao criar diretório: " + e.getMessage();
         }
@@ -444,6 +483,8 @@ public class SistemaArquivos {
                 paiAlvo = (Diretorio) noPai;
             }
 
+            validarNome(nomeArquivo);
+
             if (!verificarPermissao(paiAlvo, 'w')) {
                 return "Permissão negada: Criar arquivo em '" + paiAlvo.getNome() + "'.";
             }
@@ -463,6 +504,8 @@ public class SistemaArquivos {
             paiAlvo.adicionarFilho(novoArq);
             return "Arquivo '" + nomeArquivo + "' criado.";
 
+        } catch (IllegalArgumentException e) {
+            return "Nome inválido: " + e.getMessage();
         } catch (Exception e) {
             return "Erro: " + e.getMessage();
         }
@@ -508,12 +551,6 @@ public class SistemaArquivos {
                 if (res.startsWith("Erro")) return res; // Falha ao criar com touch
                 arquivo = (Arquivo) resolverCaminho(caminho);
             }
-            // 2. Escrever conteúdo
-            if (append) {
-                arquivo.appendConteudo(texto);
-            } else {
-                arquivo.setConteudo(texto);
-            }
             return ""; // Sucesso (sem mensagem de erro)
 
         } catch (Exception e) {
@@ -532,6 +569,8 @@ public class SistemaArquivos {
 
             Diretorio pai = alvo.getPai();
 
+            validarNome(novoNome);
+
             // Verifica se o nome já existe no diretório pai
             if (pai.getFilho(novoNome) != null) {
                 return "Erro: Já existe um arquivo/diretório com o nome '" + novoNome + "'.";
@@ -546,6 +585,8 @@ public class SistemaArquivos {
 
             return "Renomeado de '" + nomeAntigo + "' para '" + novoNome + "'.";
 
+        } catch (IllegalArgumentException e) {
+            return "Erro: " + e.getMessage();
         } catch (Exception e) {
             return "Erro ao renomear: " + e.getMessage();
         }

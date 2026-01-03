@@ -53,7 +53,9 @@ public class Comandos {
 
     // [touch <caminho>]
     public void tree(SistemaArquivos fs, List<String> args) {
-        System.out.println(fs.tree(args.isEmpty() || args.getFirst().isEmpty() ?  "" : args.getFirst()));
+        // Valida flag
+        boolean mostrarOcultos = !args.isEmpty() && args.contains("-a");
+        System.out.println(fs.tree(args.isEmpty() || args.getFirst().isEmpty() ?  "" : args.getFirst(), mostrarOcultos));
     }
 
     // [cat <caminho>]
