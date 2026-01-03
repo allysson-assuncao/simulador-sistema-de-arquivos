@@ -152,28 +152,36 @@ public class SistemaArquivos {
         return atualNavegacao;
     }
 
-    // Verifica se o usuário atual tem permissão para realizar a ação
-    private boolean verificarPermissao(NoSistema no, char modo) {
-        // Se for o superusuário simulado 'root', tudo é permitido
+    // Verifica se o usuário logado é dono do nó
+    private boolean souDono(NoSistema no) {
+        return no.getDono().equals(this.usuarioLogado);
+    }
+
+    // Verifica se o usuário tem a permissão no nó
+    // modo: 'r', 'w' ou 'x'
+    // souDono: true se o usuário é dono, false se for "outros"
+    private boolean temPermissao(NoSistema no, char modo, boolean souDono) {
+        // Se for root, tudo é permitido
         if (usuarioLogado.equals("root")) return true;
 
-        String perms = no.getPermissoes();
         // Exemplo: -rwxr--r--
         // Índices: 0123456789
         // Dono: 1,2,3 | Grupo: 4,5,6 | Outros: 7,8,9
 
-        boolean souDono = no.getDono().equals(this.usuarioLogado);
-        int indiceBase = souDono ? 1 : 7; // Pula para o bloco de 'Outros' se não for dono
+        String perms = no.getPermissoes();
+        int indiceBase = souDono ? 1 : 7;
 
-        // Ajusta o índice baseado no que queremos verificar
         int indiceVerificacao = indiceBase;
         if (modo == 'w') indiceVerificacao += 1;
         else if (modo == 'x') indiceVerificacao += 2;
-        // Se for 'r', mantém o indiceBase
 
-        // Verifica se o caractere na posição esperada bate com o modo solicitado
-        // Ex: Se quero escrever ('w'), espero encontrar 'w' na string, e não '-'
         return perms.charAt(indiceVerificacao) == modo;
+    }
+
+    // Metodo principal que une os dois
+    private boolean verificarPermissao(NoSistema no, char modo) {
+        boolean dono = souDono(no);
+        return temPermissao(no, modo, dono);
     }
 
     // PWD (Exibe o caminho atual completo)

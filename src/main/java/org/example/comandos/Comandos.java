@@ -211,7 +211,7 @@ public class Comandos {
         for(int i = 0; i < 50; i++) System.out.println();
     }
 
-    //    Permissões e Propriedades:
+    // Permissões e Propriedades:
     public void chmod(SistemaArquivos fs, List<String> args) {
         if (args.size() < 2) {
             System.out.println("Uso incorreto. Tente: chmod <codigo_octal> <caminho>");

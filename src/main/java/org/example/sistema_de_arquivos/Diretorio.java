@@ -42,7 +42,7 @@ public class Diretorio extends NoSistema {
     @Override
     public int getTamanho() {
         // Calcula recursivamente a soma dos tamanhos dos arquivos e subdiretórios
-        int total = 0;
+        int total = 4096;
         for (NoSistema filho : getFilhos().values()) {
             total += filho.getTamanho();
         }
