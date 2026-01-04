@@ -1,9 +1,10 @@
 package org.example.sistema_de_arquivos;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.Base64;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
+import java.io.ByteArrayOutputStream;
 
 //Classe responsável por gerenciar o sistema de arquivos.
 public class SistemaArquivos {
@@ -958,91 +959,141 @@ public class SistemaArquivos {
     }
 
 
-    //Métdo Auxiliar Recursivo
     private void compactarRecursivo(NoSistema no, String caminhoRelativo, StringBuilder sb) {
-        // Define o caminho que será salvo no ZIP.
         String pathAtual = caminhoRelativo.isEmpty() ? no.getNome() : caminhoRelativo + "/" + no.getNome();
 
         if (no.isArquivo()) {
-            // Caso seja arquivo
             Arquivo arq = (Arquivo) no;
 
-            // Substituímos \n por um código especial "§BREAK§"
-            String conteudoSafe = arq.getConteudo().replace("\n", "§BREAK§");
+            // Chama o novo método deflate
+            String conteudoComprimido = comprimir(arq.getConteudo());
 
-            // Formato: FILE|caminho/do/arquivo|conteudo_do_texto
-            sb.append("FILE|").append(pathAtual).append("|").append(conteudoSafe).append("\n");
+            // Salva no formato: FILE|caminho|blob_base64
+            sb.append("FILE|").append(pathAtual).append("|").append(conteudoComprimido).append("\n");
 
         } else {
-            // Caso seja diretório?
             Diretorio dir = (Diretorio) no;
-
-            // Formato: DIR|caminho/da/pasta
             sb.append("DIR|").append(pathAtual).append("\n");
-
-            // Passamos o pathAtual para que o filho saiba quem é seu pai no zip
             for(NoSistema filho : dir.getFilhos().values()) {
                 compactarRecursivo(filho, pathAtual, sb);
             }
         }
     }
 
+    // unzip
     public String unzip(String caminhoZip) {
         try {
-            // Achar o arquivo zipado
             Arquivo zipFile = obterArquivoTexto(caminhoZip);
-
-            // Ler o conteúdo
             String conteudoTotal = zipFile.getConteudo();
             String[] linhas = conteudoTotal.split("\n");
 
-            // Verificar Cabeçalho
             if (linhas.length == 0 || !linhas[0].equals("ARQUIVO ZIPADO")) {
                 return "Erro: Arquivo corrompido ou formato inválido.";
             }
 
             int itensProcessados = 0;
 
-            // Processar linha por linha
             for (int i = 1; i < linhas.length; i++) {
                 String linha = linhas[i];
                 if (linha.trim().isEmpty()) continue;
 
-                // Divide: TIPO | CAMINHO | CONTEUDO
                 String[] partes = linha.split("\\|");
-
                 if (partes.length < 2) continue;
 
                 String tipo = partes[0];
                 String caminhoRelativo = partes[1];
 
                 if (tipo.equals("DIR")) {
-                    // Se a pasta já existir o mkdir avisa
                     this.mkdir(caminhoRelativo);
-
                 } else if (tipo.equals("FILE")) {
-                    // Tenta criar o arquivo
                     String resultado = this.touch(caminhoRelativo);
 
-                    // Se o touch funcionou preenche o conteúdo
-                    if (!resultado.startsWith("Erro")) {
-                        if (partes.length > 2) {
-                            String conteudoOriginal = partes[2];
-                            // (§BREAK§ -> \n)
-                            conteudoOriginal = conteudoOriginal.replace("§BREAK§", "\n");
+                    if (!resultado.startsWith("Erro") && partes.length > 2) {
+                        // O Base64 pode conter caracteres estranhos, mas não o pipe '|' nem quebra de linha, então é seguro.
+                        String conteudoComprimido = partes[2];
 
-                            // Grava o conteúdo (sobrescrevendo se já existir)
-                            this.escreverNoArquivo(caminhoRelativo, conteudoOriginal, false);
-                        }
+                        // Chama o novo método inflate
+                        String conteudoOriginal = descomprimir(conteudoComprimido);
+
+                        this.escreverNoArquivo(caminhoRelativo, conteudoOriginal, false);
                     }
                 }
                 itensProcessados++;
             }
 
-            return "Sucesso: " + itensProcessados + " itens processados/restaurados.";
+            return "Sucesso: " + itensProcessados + " itens restaurados.";
 
         } catch (Exception e) {
             return "Erro no unzip: " + e.getMessage();
+        }
+    }
+
+    /**
+     * COMPRESSÃO REAL (Deflate + Base64)
+     * Usa o algoritmo padrão do ZIP (zlib) e codifica em texto legível.
+     */
+    private String comprimir(String texto) {
+        if (texto == null || texto.isEmpty()) return "";
+
+        try {
+            // 1. Converte o texto para bytes
+            byte[] entrada = texto.getBytes("UTF-8");
+
+            // 2. Configura o compressor (Nível 9 = Máxima compressão)
+            Deflater deflater = new Deflater();
+            deflater.setLevel(Deflater.BEST_COMPRESSION);
+            deflater.setInput(entrada);
+            deflater.finish();
+
+            // 3. Buffer para receber os dados comprimidos
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream(entrada.length);
+            byte[] buffer = new byte[1024];
+
+            while (!deflater.finished()) {
+                int count = deflater.deflate(buffer);
+                outputStream.write(buffer, 0, count);
+            }
+            outputStream.close();
+
+            byte[] dadosComprimidos = outputStream.toByteArray();
+
+            // 4. Converte binário feio para Texto Base64 (para salvar no seu sistema)
+            return Base64.getEncoder().encodeToString(dadosComprimidos);
+
+        } catch (Exception e) {
+            return "Erro na compressão: " + e.getMessage();
+        }
+    }
+
+    /**
+     * DESCOMPRESSÃO REAL (Base64 + Inflate)
+     */
+    private String descomprimir(String textoComprimidoBase64) {
+        if (textoComprimidoBase64 == null || textoComprimidoBase64.isEmpty()) return "";
+
+        try {
+            // 1. Decodifica o texto Base64 de volta para binário
+            byte[] entrada = Base64.getDecoder().decode(textoComprimidoBase64);
+
+            // 2. Configura o descompressor
+            Inflater inflater = new Inflater();
+            inflater.setInput(entrada);
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream(entrada.length);
+            byte[] buffer = new byte[1024];
+
+            while (!inflater.finished()) {
+                int count = inflater.inflate(buffer);
+                outputStream.write(buffer, 0, count);
+            }
+            outputStream.close();
+
+            // 3. Converte os bytes de volta para String
+            return new String(outputStream.toByteArray(), "UTF-8");
+
+        } catch (Exception e) {
+            // Se der erro (ex: tentar unzipar algo que não é zip), retorna o original ou erro
+            return "Erro na descompressão (arquivo corrompido ou formato inválido).";
         }
     }
 }
