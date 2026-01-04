@@ -435,31 +435,53 @@ public class SistemaArquivos {
     }
 
     // RM (Remove arquivos ou diretórios vazios)
-    public String rm(String caminho) {
+    public String rm(String caminho, boolean recursivo) {
         try {
-            // É necessário encontrar o alvo e remover a referência do pai
             NoSistema alvo = resolverCaminho(caminho);
 
+            // 1. Proteções Básicas
             if (alvo == raiz) return "Erro: Não é possível remover a raiz.";
+
+            // Proteção Extra: Não deixar remover o diretório onde o usuário está (ou um ancestral dele)
+            if (isAncestral(alvo, diretorioAtual)) {
+                return "Erro: Não é possível remover o diretório atual ou um de seus pais enquanto você está dentro dele.";
+            }
 
             Diretorio pai = alvo.getPai();
 
+            // 2. Verificação de Permissão (Precisa de escrita no PAI)
             if (!verificarPermissao(pai, 'w')) {
                 return "Permissão negada: Não é possível remover '" + alvo.getNome() + "' (sem permissão de escrita no diretório pai).";
             }
 
+            // 3. Lógica de Diretório e Recursividade
             if (alvo.isDiretorio()) {
-                if (((Diretorio) alvo).temFilhos()) {
-                    return "Erro: O diretório não está vazio (use rm -rf para remover tudo de forma recursiva).";
+                Diretorio dirAlvo = (Diretorio) alvo;
+
+                // Se tem filhos e NÃO foi passado -r/-rf
+                if (dirAlvo.temFilhos() && !recursivo) {
+                    return "Erro: O diretório '" + alvo.getNome() + "' não está vazio. (Use -rf para forçar recursividade)";
                 }
+                // Caso contrário segue e remove os filhos internos
             }
 
+            // 4. Remoção
             pai.removerFilho(alvo.getNome());
             return "Removido: " + alvo.getNome();
 
         } catch (Exception e) {
             return "Erro ao remover: " + e.getMessage();
         }
+    }
+
+    // Método auxiliar simples para verificar se 'supostoPai' faz parte do caminho do 'filho'
+    private boolean isAncestral(NoSistema supostoAncestral, NoSistema filho) {
+        NoSistema temp = filho;
+        while (temp != null) {
+            if (temp == supostoAncestral) return true;
+            temp = temp.getPai();
+        }
+        return false;
     }
 
     // TOUCH (Cria um arquivo vazio)

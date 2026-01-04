@@ -88,10 +88,31 @@ public class Comandos {
     // [rm <nome/caminho> -modificadores]
     public void rm(SistemaArquivos fs, List<String> args) {
         if (args.isEmpty()) {
-            System.out.println("Uso: rm <caminho>");
+            System.out.println("Uso: rm [-rf] <caminho>");
             return;
         }
-        System.out.println(fs.rm(args.getFirst()));
+
+        boolean recursivo = false;
+        String caminho = null;
+
+        // Parser de argumentos manual para separar flags do caminho
+        for (String arg : args) {
+            if (arg.startsWith("-")) {
+                // Verifica se tem 'r' ou 'R' nas flags (ex: -r, -rf, -R)
+                if (arg.toLowerCase().contains("r")) {
+                    recursivo = true;
+                }
+            } else {
+                caminho = arg; // Assume que o que não é flag, é o caminho
+            }
+        }
+
+        if (caminho == null) {
+            System.out.println("Erro: Nenhum caminho especificado.");
+            return;
+        }
+
+        System.out.println(fs.rm(caminho, recursivo));
     }
 
     // [touch <nome>]
