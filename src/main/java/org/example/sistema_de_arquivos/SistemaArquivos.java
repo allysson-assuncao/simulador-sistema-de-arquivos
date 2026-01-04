@@ -758,25 +758,23 @@ public class SistemaArquivos {
 
     // FIND - Metodo auxiliar
     private void buscarRecursivo(NoSistema no, String nomeBuscado, StringBuilder resultado) {
+        boolean dono = souDono(no);
+        boolean podeLer = temPermissao(no, 'r', dono);
 
-        // Se for diretório e não tiver permissão, mostra erro e não entra
-        if (no.isDiretorio() && !no.getDono().equals(usuarioLogado)) {
-            resultado.append("find: '")
-                    .append(montarCaminho(no))
-                    .append("': Permissão negada\n");
-            return;
-        }
-
-        // Se o nome bate, lista (arquivo ou diretório)
         if (no.getNome().equals(nomeBuscado)) {
             resultado.append(montarCaminho(no)).append("\n");
         }
 
-        // Desce recursivamente apenas se for diretório acessível
         if (no.isDiretorio()) {
-            Diretorio dir = (Diretorio) no;
-            for (NoSistema filho : dir.getFilhos().values()) {
-                buscarRecursivo(filho, nomeBuscado, resultado);
+            if (podeLer) {
+                Diretorio dir = (Diretorio) no;
+                for (NoSistema filho : dir.getFilhos().values()) {
+                    buscarRecursivo(filho, nomeBuscado, resultado);
+                }
+            } else {
+                resultado.append("find: '")
+                        .append(montarCaminho(no))
+                        .append("': Permissão negada\n");
             }
         }
     }
@@ -843,14 +841,41 @@ public class SistemaArquivos {
     // DU
     public String du(String caminho) {
         try {
-            NoSistema no = resolverCaminho(caminho);
+            String alvo = (caminho == null || caminho.isEmpty()) ? "." : caminho;
+            NoSistema no = resolverCaminho(alvo);
+
+            if (!verificarPermissao(no, 'r')) {
+                return "du: permissão negada para '" + alvo + "'\n";
+            }
 
             StringBuilder sb = new StringBuilder();
-            sb.append(no.getNome()).append("\t").append(no.getTamanho()).append(" bytes\n");
-
+            gerarSaidaDuRecursivo(no, sb, alvo);
             return sb.toString();
         } catch (Exception e) {
             return "du: " + e.getMessage() + "\n";
+        }
+    }
+
+    // DU: Metodo auxiliar para imprimir diretorios recursivamente
+    private void gerarSaidaDuRecursivo(NoSistema no, StringBuilder sb, String caminhoExibicao) {
+        if (no instanceof Diretorio) {
+            if (verificarPermissao(no, 'r') && verificarPermissao(no, 'x')) {
+                Diretorio dir = (Diretorio) no;
+
+                for (NoSistema filho : dir.getFilhos().values()) {
+                    if (filho.isDiretorio()) {
+                        String separador = caminhoExibicao.endsWith("/") ? "" : "/";
+                        String caminhoFilho = caminhoExibicao + separador + filho.getNome();
+                        gerarSaidaDuRecursivo(filho, sb, caminhoFilho);
+                    }
+                }
+            } else {
+                sb.append("du: não foi possível ler diretório '").append(caminhoExibicao).append("': Permissão negada\n");
+            }
+
+            sb.append(no.getTamanho()).append("\t").append(caminhoExibicao).append("\n");
+        } else if (no.isArquivo()) {
+            sb.append(no.getTamanho()).append("\t").append(caminhoExibicao).append("\n");
         }
     }
 }
