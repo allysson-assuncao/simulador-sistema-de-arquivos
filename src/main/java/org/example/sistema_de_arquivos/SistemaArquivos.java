@@ -959,28 +959,43 @@ public class SistemaArquivos {
     }
 
 
+    //Compactar recursivo
     private void compactarRecursivo(NoSistema no, String caminhoRelativo, StringBuilder sb) {
         String pathAtual = caminhoRelativo.isEmpty() ? no.getNome() : caminhoRelativo + "/" + no.getNome();
+
+        // Recupera metadados
+        String perms = no.getPermissoes();
+        String dono = no.getDono();
 
         if (no.isArquivo()) {
             Arquivo arq = (Arquivo) no;
 
-            // Chama o novo método deflate
+            // Usa a compressão REAL (Deflate+Base64) que fizemos antes
             String conteudoComprimido = comprimir(arq.getConteudo());
 
-            // Salva no formato: FILE|caminho|blob_base64
-            sb.append("FILE|").append(pathAtual).append("|").append(conteudoComprimido).append("\n");
+            // NOVO FORMATO: FILE | CAMINHO | PERMS | DONO | DADOS
+            sb.append("FILE|")
+                    .append(pathAtual).append("|")
+                    .append(perms).append("|")
+                    .append(dono).append("|")
+                    .append(conteudoComprimido).append("\n");
 
         } else {
             Diretorio dir = (Diretorio) no;
-            sb.append("DIR|").append(pathAtual).append("\n");
+
+            // NOVO FORMATO: DIR | CAMINHO | PERMS | DONO
+            sb.append("DIR|")
+                    .append(pathAtual).append("|")
+                    .append(perms).append("|")
+                    .append(dono).append("\n");
+
             for(NoSistema filho : dir.getFilhos().values()) {
                 compactarRecursivo(filho, pathAtual, sb);
             }
         }
     }
 
-    // unzip
+    //Unzip
     public String unzip(String caminhoZip) {
         try {
             Arquivo zipFile = obterArquivoTexto(caminhoZip);
@@ -998,54 +1013,80 @@ public class SistemaArquivos {
                 if (linha.trim().isEmpty()) continue;
 
                 String[] partes = linha.split("\\|");
-                if (partes.length < 2) continue;
+
+                // Validação, FILE precisa de 5 partes, DIR precisa de 4
+                if (partes.length < 4) continue;
 
                 String tipo = partes[0];
                 String caminhoRelativo = partes[1];
+                String perms = partes[2];
+                String dono = partes[3];
 
                 if (tipo.equals("DIR")) {
+                    // Cria a pasta
                     this.mkdir(caminhoRelativo);
+                    // Restaura permissões
+                    aplicarMetadados(caminhoRelativo, perms, dono);
+
                 } else if (tipo.equals("FILE")) {
+                    // Cria o arquivo
                     String resultado = this.touch(caminhoRelativo);
 
-                    if (!resultado.startsWith("Erro") && partes.length > 2) {
-                        // O Base64 pode conter caracteres estranhos, mas não o pipe '|' nem quebra de linha, então é seguro.
-                        String conteudoComprimido = partes[2];
+                    if (!resultado.startsWith("Erro")) {
+                        // Restaura permissões
+                        aplicarMetadados(caminhoRelativo, perms, dono);
 
-                        // Chama o novo método inflate
-                        String conteudoOriginal = descomprimir(conteudoComprimido);
-
-                        this.escreverNoArquivo(caminhoRelativo, conteudoOriginal, false);
+                        if (partes.length > 4) {
+                            String conteudoComprimido = partes[4];
+                            // Descomprime
+                            String conteudoOriginal = descomprimir(conteudoComprimido);
+                            // Grava conteúdo
+                            this.escreverNoArquivo(caminhoRelativo, conteudoOriginal, false);
+                        }
                     }
                 }
                 itensProcessados++;
             }
 
-            return "Sucesso: " + itensProcessados + " itens restaurados.";
+            return "Sucesso: " + itensProcessados + " itens restaurados com metadados.";
 
         } catch (Exception e) {
             return "Erro no unzip: " + e.getMessage();
         }
     }
 
+    // Métod Auxiliar
+    private void aplicarMetadados(String caminho, String perms, String dono) {
+        try {
+            NoSistema no = resolverCaminho(caminho);
+            if (no != null) {
+                no.setPermissoes(perms);
+                no.setDono(dono);
+            }
+        } catch (Exception e) {
+            // Ignora silenciosamente se falhar ao aplicar metadados, pois o arquivo já foi criado
+        }
+    }
+
     /**
-     * COMPRESSÃO REAL (Deflate + Base64)
+     * Deflate + Base64
      * Usa o algoritmo padrão do ZIP (zlib) e codifica em texto legível.
      */
+
     private String comprimir(String texto) {
         if (texto == null || texto.isEmpty()) return "";
 
         try {
-            // 1. Converte o texto para bytes
+            // Converte o texto para bytes
             byte[] entrada = texto.getBytes("UTF-8");
 
-            // 2. Configura o compressor (Nível 9 = Máxima compressão)
+            // Configura o compressor
             Deflater deflater = new Deflater();
             deflater.setLevel(Deflater.BEST_COMPRESSION);
             deflater.setInput(entrada);
             deflater.finish();
 
-            // 3. Buffer para receber os dados comprimidos
+            // Buffer para receber os dados comprimidos
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream(entrada.length);
             byte[] buffer = new byte[1024];
 
@@ -1057,7 +1098,7 @@ public class SistemaArquivos {
 
             byte[] dadosComprimidos = outputStream.toByteArray();
 
-            // 4. Converte binário feio para Texto Base64 (para salvar no seu sistema)
+            // Converte binário feio para Texto Base64 (para salvar no seu sistema)
             return Base64.getEncoder().encodeToString(dadosComprimidos);
 
         } catch (Exception e) {
@@ -1066,16 +1107,16 @@ public class SistemaArquivos {
     }
 
     /**
-     * DESCOMPRESSÃO REAL (Base64 + Inflate)
+     * Descompactação
      */
     private String descomprimir(String textoComprimidoBase64) {
         if (textoComprimidoBase64 == null || textoComprimidoBase64.isEmpty()) return "";
 
         try {
-            // 1. Decodifica o texto Base64 de volta para binário
+            // Decodifica o texto Base64 de volta para binário
             byte[] entrada = Base64.getDecoder().decode(textoComprimidoBase64);
 
-            // 2. Configura o descompressor
+            // Configura o descompressor
             Inflater inflater = new Inflater();
             inflater.setInput(entrada);
 
@@ -1088,12 +1129,12 @@ public class SistemaArquivos {
             }
             outputStream.close();
 
-            // 3. Converte os bytes de volta para String
+            // Converte os bytes de volta para String
             return new String(outputStream.toByteArray(), "UTF-8");
 
         } catch (Exception e) {
             // Se der erro (ex: tentar unzipar algo que não é zip), retorna o original ou erro
-            return "Erro na descompressão (arquivo corrompido ou formato inválido).";
+            return "Erro na descompressão: Arquivo corrompido ou formato inválido.";
         }
     }
 }
