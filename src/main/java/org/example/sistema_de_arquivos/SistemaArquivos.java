@@ -5,6 +5,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.Base64;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
+import java.io.ByteArrayOutputStream;
 
 //Classe responsável por gerenciar o sistema de arquivos.
 public class SistemaArquivos {
@@ -898,6 +902,347 @@ public class SistemaArquivos {
             sb.append(no.getTamanho()).append("\t").append(caminhoExibicao).append("\n");
         } else if (no.isArquivo()) {
             sb.append(no.getTamanho()).append("\t").append(caminhoExibicao).append("\n");
+        }
+    }
+
+    // cp Copia arquivos ou diretórios de um lugar para outro.
+    public String cp(String origem, String destino) {
+        try {
+            // Busca a origem
+            NoSistema noOrigem = resolverCaminho(origem);
+
+            // Busca o destino
+            NoSistema noDestino = resolverCaminho(destino);
+
+            if (!noDestino.isDiretorio()) {
+                //Se o destino existe mas é um arquivo não podemos copiar para dentro dele
+                return "Erro: O destino '" + destino + "' não é um diretório.";
+            }
+
+            Diretorio dirDestino = (Diretorio) noDestino;
+
+            // Verifica permissões
+            if (!verificarPermissao(noOrigem, 'r')) return "Permissão negada: Ler origem.";
+            if (!verificarPermissao(dirDestino, 'w')) return "Permissão negada: Escrever no destino.";
+
+            // Copia
+            copiarRecursivo(noOrigem, dirDestino, noOrigem.getNome());
+
+            return "Sucesso: Copiado para '" + dirDestino.getNome() + "/" + noOrigem.getNome() + "'";
+
+        } catch (Exception e) {
+            return "Erro ao copiar: " + e.getMessage();
+        }
+    }
+
+
+    // Realiza a Cópia Profunda
+    private void copiarRecursivo(NoSistema original, Diretorio paiDestino, String novoNome) {
+        if (original.isArquivo()) {
+            Arquivo originalArq = (Arquivo) original; // Cast para acessar métodos de Arquivo
+
+            // Cria um novo objeto na memória
+            Arquivo copia = new Arquivo(novoNome, paiDestino);
+
+            // Copia os dados manuamente
+            copia.setConteudo(originalArq.getConteudo()); // Clona o texto
+            copia.setPermissoes(originalArq.getPermissoes()); // Clona permissões
+            copia.setDono(this.usuarioLogado); // O dono da cópia é quem está copiando (eu), não o dono original
+
+            // Adiciona a cópia na lista de filhos do diretório de destino
+            paiDestino.adicionarFilho(copia);
+
+        } else {
+            // Diretório
+            Diretorio originalDir = (Diretorio) original;
+
+            // Cria a nova pasta no destino
+            Diretorio copiaDir = new Diretorio(novoNome, paiDestino);
+
+            // Copia metadados
+            copiaDir.setPermissoes(originalDir.getPermissoes());
+            copiaDir.setDono(this.usuarioLogado);
+
+            // Adiciona a nova pasta no destino
+            paiDestino.adicionarFilho(copiaDir);
+
+            // Percorre todos os filhos da pasta original
+            for (NoSistema filho : originalDir.getFilhos().values()) {
+                // Chama para cada filho.
+                copiarRecursivo(filho, copiaDir, filho.getNome());
+            }
+        }
+    }
+
+    // MV
+    public String mv(String origem, String destino) {
+        try {
+            // Busca quem vamos mover
+            NoSistema noOrigem = resolverCaminho(origem);
+
+            // Não podemos mover a raiz do sistema
+            if (noOrigem == raiz) return "Erro: Não é possível mover o diretório raiz.";
+
+            // Busca para onde vamos levar
+            NoSistema noDestino = resolverCaminho(destino);
+
+            if (!noDestino.isDiretorio()) {
+                return "Erro: O destino '" + destino + "' não é um diretório válido.";
+            }
+
+            Diretorio dirDestino = (Diretorio) noDestino;
+            Diretorio paiAntigo = noOrigem.getPai();
+
+            // Verificações de Permissão
+            if (!verificarPermissao(paiAntigo, 'w')) {
+                return "Permissão negada: Não pode remover de '" + paiAntigo.getNome() + "'";
+            }
+            if (!verificarPermissao(dirDestino, 'w')) {
+                return "Permissão negada: Não pode mover para '" + dirDestino.getNome() + "'";
+            }
+
+            // Verificação de Colisão
+            if (dirDestino.getFilho(noOrigem.getNome()) != null) {
+                return "Erro: Já existe um arquivo/diretório chamado '" + noOrigem.getNome() + "' no destino.";
+            }
+
+            // Remove da lista do pai antigo
+            paiAntigo.removerFilho(noOrigem.getNome());
+
+            // Atualiza a referência de pai dentro do objeto
+            noOrigem.pai = dirDestino;
+
+            // Adiciona na lista do novo pai
+            dirDestino.adicionarFilho(noOrigem);
+
+            return "Sucesso: '" + noOrigem.getNome() + "' movido para '" + dirDestino.getNome() + "'";
+
+        } catch (Exception e) {
+            return "Erro ao mover: " + e.getMessage();
+        }
+    }
+
+    // zip
+    public String zip(String nomeZip, String caminhoAlvo) {
+        try {
+
+            // Se o usuário não digitar .zip
+            if (!nomeZip.endsWith(".zip")) {
+                nomeZip += ".zip";
+            }
+
+
+            // O que compactar?
+            NoSistema alvo = resolverCaminho(caminhoAlvo);
+
+            // Preparação do Conteúdo
+            StringBuilder dadosZip = new StringBuilder();
+
+            // Cabeçalho do arquivo
+            dadosZip.append("ARQUIVO ZIPADO\n");
+
+            /*
+             "compactarRecursivo" vai encher o StringBuilder com os dados da árvore
+             O segundo parâmetro "" é o prefixo do caminho (começa vazio)
+             */
+
+            compactarRecursivo(alvo, "", dadosZip);
+
+            // Criação do Arquivo ZIP no sistema
+            String resultadoTouch = touch(nomeZip);
+
+            // Se o touch der erro
+            if (resultadoTouch.startsWith("Erro") || resultadoTouch.startsWith("Permissão")) {
+                return resultadoTouch;
+            }
+
+            // Gravação dos dados
+            escreverNoArquivo(nomeZip, dadosZip.toString());
+
+            return "Sucesso: Arquivo '" + nomeZip + "' criado com o conteúdo de '" + alvo.getNome() + "'";
+
+        } catch (Exception e) {
+            return "Erro ao zipar: " + e.getMessage();
+        }
+    }
+
+
+    //Compactar recursivo
+    private void compactarRecursivo(NoSistema no, String caminhoRelativo, StringBuilder sb) {
+        String pathAtual = caminhoRelativo.isEmpty() ? no.getNome() : caminhoRelativo + "/" + no.getNome();
+
+        // Recupera metadados
+        String perms = no.getPermissoes();
+        String dono = no.getDono();
+
+        if (no.isArquivo()) {
+            Arquivo arq = (Arquivo) no;
+
+            // Usa a compressão REAL (Deflate+Base64) que fizemos antes
+            String conteudoComprimido = comprimir(arq.getConteudo());
+
+            // NOVO FORMATO: FILE | CAMINHO | PERMS | DONO | DADOS
+            sb.append("FILE|")
+                    .append(pathAtual).append("|")
+                    .append(perms).append("|")
+                    .append(dono).append("|")
+                    .append(conteudoComprimido).append("\n");
+
+        } else {
+            Diretorio dir = (Diretorio) no;
+
+            // NOVO FORMATO: DIR | CAMINHO | PERMS | DONO
+            sb.append("DIR|")
+                    .append(pathAtual).append("|")
+                    .append(perms).append("|")
+                    .append(dono).append("\n");
+
+            for(NoSistema filho : dir.getFilhos().values()) {
+                compactarRecursivo(filho, pathAtual, sb);
+            }
+        }
+    }
+
+    //Unzip
+    public String unzip(String caminhoZip) {
+        try {
+            Arquivo zipFile = obterArquivoTexto(caminhoZip);
+            String conteudoTotal = zipFile.getConteudo();
+            String[] linhas = conteudoTotal.split("\n");
+
+            if (linhas.length == 0 || !linhas[0].equals("ARQUIVO ZIPADO")) {
+                return "Erro: Arquivo corrompido ou formato inválido.";
+            }
+
+            int itensProcessados = 0;
+
+            for (int i = 1; i < linhas.length; i++) {
+                String linha = linhas[i];
+                if (linha.trim().isEmpty()) continue;
+
+                String[] partes = linha.split("\\|");
+
+                // Validação, FILE precisa de 5 partes, DIR precisa de 4
+                if (partes.length < 4) continue;
+
+                String tipo = partes[0];
+                String caminhoRelativo = partes[1];
+                String perms = partes[2];
+                String dono = partes[3];
+
+                if (tipo.equals("DIR")) {
+                    // Cria a pasta
+                    this.mkdir(caminhoRelativo);
+                    // Restaura permissões
+                    aplicarMetadados(caminhoRelativo, perms, dono);
+
+                } else if (tipo.equals("FILE")) {
+                    // Cria o arquivo
+                    String resultado = this.touch(caminhoRelativo);
+
+                    if (!resultado.startsWith("Erro")) {
+                        // Restaura permissões
+                        aplicarMetadados(caminhoRelativo, perms, dono);
+
+                        if (partes.length > 4) {
+                            String conteudoComprimido = partes[4];
+                            // Descomprime
+                            String conteudoOriginal = descomprimir(conteudoComprimido);
+                            // Grava conteúdo
+                            this.escreverNoArquivo(caminhoRelativo, conteudoOriginal, false);
+                        }
+                    }
+                }
+                itensProcessados++;
+            }
+
+            return "Sucesso: " + itensProcessados + " itens restaurados com metadados.";
+
+        } catch (Exception e) {
+            return "Erro no unzip: " + e.getMessage();
+        }
+    }
+
+    // Métod Auxiliar
+    private void aplicarMetadados(String caminho, String perms, String dono) {
+        try {
+            NoSistema no = resolverCaminho(caminho);
+            if (no != null) {
+                no.setPermissoes(perms);
+                no.setDono(dono);
+            }
+        } catch (Exception e) {
+            // Ignora silenciosamente se falhar ao aplicar metadados, pois o arquivo já foi criado
+        }
+    }
+
+    /**
+     * Deflate + Base64
+     * Usa o algoritmo padrão do ZIP (zlib) e codifica em texto legível.
+     */
+
+    private String comprimir(String texto) {
+        if (texto == null || texto.isEmpty()) return "";
+
+        try {
+            // Converte o texto para bytes
+            byte[] entrada = texto.getBytes("UTF-8");
+
+            // Configura o compressor
+            Deflater deflater = new Deflater();
+            deflater.setLevel(Deflater.BEST_COMPRESSION);
+            deflater.setInput(entrada);
+            deflater.finish();
+
+            // Buffer para receber os dados comprimidos
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream(entrada.length);
+            byte[] buffer = new byte[1024];
+
+            while (!deflater.finished()) {
+                int count = deflater.deflate(buffer);
+                outputStream.write(buffer, 0, count);
+            }
+            outputStream.close();
+
+            byte[] dadosComprimidos = outputStream.toByteArray();
+
+            // Converte binário feio para Texto Base64 (para salvar no seu sistema)
+            return Base64.getEncoder().encodeToString(dadosComprimidos);
+
+        } catch (Exception e) {
+            return "Erro na compressão: " + e.getMessage();
+        }
+    }
+
+    /**
+     * Descompactação
+     */
+    private String descomprimir(String textoComprimidoBase64) {
+        if (textoComprimidoBase64 == null || textoComprimidoBase64.isEmpty()) return "";
+
+        try {
+            // Decodifica o texto Base64 de volta para binário
+            byte[] entrada = Base64.getDecoder().decode(textoComprimidoBase64);
+
+            // Configura o descompressor
+            Inflater inflater = new Inflater();
+            inflater.setInput(entrada);
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream(entrada.length);
+            byte[] buffer = new byte[1024];
+
+            while (!inflater.finished()) {
+                int count = inflater.inflate(buffer);
+                outputStream.write(buffer, 0, count);
+            }
+            outputStream.close();
+
+            // Converte os bytes de volta para String
+            return new String(outputStream.toByteArray(), "UTF-8");
+
+        } catch (Exception e) {
+            // Se der erro (ex: tentar unzipar algo que não é zip), retorna o original ou erro
+            return "Erro na descompressão: Arquivo corrompido ou formato inválido.";
         }
     }
 }

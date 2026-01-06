@@ -297,4 +297,47 @@ public class Comandos {
 
         System.out.print(fs.du(args.get(0)));
     }
+
+    // cp
+    public void cp(SistemaArquivos fs, List<String> args) {
+        // Validação básica, cp precisa de 2 coisas (origem e destino)
+        if (args.size() < 2) {
+            System.out.println("Uso: cp <origem> <destino>");
+            return;
+        }
+
+        String origem = args.get(0);
+        String destino = args.get(1);
+
+        System.out.println(fs.cp(origem, destino));
+    }
+
+    // mv
+    public void mv(SistemaArquivos fs, List<String> args) {
+        if (args.size() < 2) {
+            System.out.println("Uso: mv <origem> <destino>");
+            return;
+        }
+        System.out.println(fs.mv(args.get(0), args.get(1)));
+    }
+
+    // [zip <nome_saida.zip> <arquivo_ou_pasta_alvo>]
+    public void zip(SistemaArquivos fs, List<String> args) {
+        if (args.size() < 2) {
+            System.out.println("Uso: zip <nome_arquivo.zip> <caminho_alvo>");
+            return;
+        }
+        // args.get(0) = nome do zip
+        // args.get(1) = o que vai ser zipado
+        System.out.println(fs.zip(args.get(0), args.get(1)));
+    }
+
+    // [unzip <arquivo.zip>]
+    public void unzip(SistemaArquivos fs, List<String> args) {
+        if (args.isEmpty()) {
+            System.out.println("Uso: unzip <arquivo.zip>");
+            return;
+        }
+        System.out.println(fs.unzip(args.get(0)));
+    }
 }

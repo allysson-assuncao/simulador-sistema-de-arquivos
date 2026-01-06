@@ -60,11 +60,11 @@ public class Terminal {
         chmod -
         chown -
 
-        Operações *Avançadas: (0/4) - Bryan
-        cp -
-        mv -
-        zip -
-        unzip -
+        Operações *Avançadas: (4/4) - Bryan
+        cp - Completo
+        mv - Completo
+        zip - Completo
+        unzip - Completo
 
         */
 
@@ -100,10 +100,10 @@ public class Terminal {
         mapaComandos.put("chown", implementacao::chown);
 
         // Operações Avançadas
-        /*mapaComandos.put("cp", implementacao::cp);
+        mapaComandos.put("cp", implementacao::cp);
         mapaComandos.put("mv", implementacao::mv);
         mapaComandos.put("zip", implementacao::zip);
-        mapaComandos.put("unzip", implementacao::unzip);*/
+        mapaComandos.put("unzip", implementacao::unzip);
 
         // Outros
         mapaComandos.put("clear", implementacao::clear);
