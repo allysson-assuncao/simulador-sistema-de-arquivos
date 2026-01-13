@@ -905,7 +905,7 @@ public class SistemaArquivos {
         }
     }
 
-    // cp Copia arquivos ou diretórios de um lugar para outro.
+    // Copia arquivos ou diretórios de um lugar para outro.
     public String cp(String origem, String destino) {
         try {
             // Busca a origem
@@ -914,12 +914,13 @@ public class SistemaArquivos {
             // Busca o destino
             NoSistema noDestino = resolverCaminho(destino);
 
+            // Verifica se o destino não é um diretório
             if (!noDestino.isDiretorio()) {
-                //Se o destino existe mas é um arquivo não podemos copiar para dentro dele
                 return "Erro: O destino '" + destino + "' não é um diretório.";
             }
 
-            Diretorio dirDestino = (Diretorio) noDestino;
+
+            Diretorio dirDestino = (Diretorio) noDestino; // Faz um cast
 
             // Verifica permissões
             if (!verificarPermissao(noOrigem, 'r')) return "Permissão negada: Ler origem.";
@@ -939,6 +940,7 @@ public class SistemaArquivos {
     // Realiza a Cópia Profunda
     private void copiarRecursivo(NoSistema original, Diretorio paiDestino, String novoNome) {
         if (original.isArquivo()) {
+            //Se for arquivo
             Arquivo originalArq = (Arquivo) original; // Cast para acessar métodos de Arquivo
 
             // Cria um novo objeto na memória
@@ -978,20 +980,23 @@ public class SistemaArquivos {
     public String mv(String origem, String destino) {
         try {
             // Busca quem vamos mover
-            NoSistema noOrigem = resolverCaminho(origem);
+            NoSistema noMover = resolverCaminho(origem);
 
             // Não podemos mover a raiz do sistema
-            if (noOrigem == raiz) return "Erro: Não é possível mover o diretório raiz.";
+            if (noMover == raiz) return "Erro: Não é possível mover o diretório raiz.";
 
             // Busca para onde vamos levar
             NoSistema noDestino = resolverCaminho(destino);
 
+            // Se o destino não é um diretório
             if (!noDestino.isDiretorio()) {
                 return "Erro: O destino '" + destino + "' não é um diretório válido.";
             }
 
+            // Trasnforma de NoSistema para diretório
             Diretorio dirDestino = (Diretorio) noDestino;
-            Diretorio paiAntigo = noOrigem.getPai();
+            // Pega o pai do que vamos mover
+            Diretorio paiAntigo = noMover.getPai();
 
             // Verificações de Permissão
             if (!verificarPermissao(paiAntigo, 'w')) {
@@ -1002,20 +1007,20 @@ public class SistemaArquivos {
             }
 
             // Verificação de Colisão
-            if (dirDestino.getFilho(noOrigem.getNome()) != null) {
-                return "Erro: Já existe um arquivo/diretório chamado '" + noOrigem.getNome() + "' no destino.";
+            if (dirDestino.getFilho(noMover.getNome()) != null) {
+                return "Erro: Já existe um arquivo/diretório chamado '" + noMover.getNome() + "' no destino.";
             }
 
             // Remove da lista do pai antigo
-            paiAntigo.removerFilho(noOrigem.getNome());
+            paiAntigo.removerFilho(noMover.getNome());
 
             // Atualiza a referência de pai dentro do objeto
-            noOrigem.pai = dirDestino;
+            noMover.pai = dirDestino;
 
             // Adiciona na lista do novo pai
-            dirDestino.adicionarFilho(noOrigem);
+            dirDestino.adicionarFilho(noMover);
 
-            return "Sucesso: '" + noOrigem.getNome() + "' movido para '" + dirDestino.getNome() + "'";
+            return "Sucesso: '" + noMover.getNome() + "' movido para '" + dirDestino.getNome() + "'";
 
         } catch (Exception e) {
             return "Erro ao mover: " + e.getMessage();
@@ -1042,8 +1047,8 @@ public class SistemaArquivos {
             dadosZip.append("ARQUIVO ZIPADO\n");
 
             /*
-             "compactarRecursivo" vai encher o StringBuilder com os dados da árvore
-             O segundo parâmetro "" é o prefixo do caminho (começa vazio)
+             compactarRecursivo vai encher o StringBuilder com os dados da árvore
+             O segundo parâmetro "" é o prefixo do caminho
              */
 
             compactarRecursivo(alvo, "", dadosZip);
@@ -1069,7 +1074,12 @@ public class SistemaArquivos {
 
     //Compactar recursivo
     private void compactarRecursivo(NoSistema no, String caminhoRelativo, StringBuilder sb) {
-        String pathAtual = caminhoRelativo.isEmpty() ? no.getNome() : caminhoRelativo + "/" + no.getNome();
+
+        /*
+         Usa ternário para representar um if/else (? :)
+         Se o pai é vazio, sou a raiz. Senão, sou Pai + / + Eu.
+         */
+        String caminhoCompleto = caminhoRelativo.isEmpty() ? no.getNome() : caminhoRelativo + "/" + no.getNome();
 
         // Recupera metadados
         String perms = no.getPermissoes();
@@ -1078,12 +1088,12 @@ public class SistemaArquivos {
         if (no.isArquivo()) {
             Arquivo arq = (Arquivo) no;
 
-            // Usa a compressão REAL (Deflate+Base64) que fizemos antes
+            // Usa a compressão real Deflate+Base64
             String conteudoComprimido = comprimir(arq.getConteudo());
 
             // NOVO FORMATO: FILE | CAMINHO | PERMS | DONO | DADOS
             sb.append("FILE|")
-                    .append(pathAtual).append("|")
+                    .append(caminhoCompleto).append("|")
                     .append(perms).append("|")
                     .append(dono).append("|")
                     .append(conteudoComprimido).append("\n");
@@ -1093,17 +1103,17 @@ public class SistemaArquivos {
 
             // NOVO FORMATO: DIR | CAMINHO | PERMS | DONO
             sb.append("DIR|")
-                    .append(pathAtual).append("|")
+                    .append(caminhoCompleto).append("|")
                     .append(perms).append("|")
                     .append(dono).append("\n");
 
             for(NoSistema filho : dir.getFilhos().values()) {
-                compactarRecursivo(filho, pathAtual, sb);
+                compactarRecursivo(filho, caminhoCompleto, sb);
             }
         }
     }
 
-    //Unzip
+    // Unzip
     public String unzip(String caminhoZip) {
         try {
             Arquivo zipFile = obterArquivoTexto(caminhoZip);
@@ -1194,19 +1204,22 @@ public class SistemaArquivos {
             deflater.setInput(entrada);
             deflater.finish();
 
-            // Buffer para receber os dados comprimidos
+            // Buffer para receber os dados comprimidos, cria um array de bytes dinamico
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream(entrada.length);
             byte[] buffer = new byte[1024];
 
+
+            // Enquanto tiver dados para ler
             while (!deflater.finished()) {
-                int count = deflater.deflate(buffer);
-                outputStream.write(buffer, 0, count);
+                int count = deflater.deflate(buffer); // Esse count serve para limitar ao numero de 1Kb
+                outputStream.write(buffer, 0, count); //Escreve
             }
             outputStream.close();
 
+            // Cria um array de dados comprimidos com os dados gerados no wile
             byte[] dadosComprimidos = outputStream.toByteArray();
 
-            // Converte binário feio para Texto Base64 (para salvar no seu sistema)
+            // Converte binário para Texto Base64
             return Base64.getEncoder().encodeToString(dadosComprimidos);
 
         } catch (Exception e) {
@@ -1228,6 +1241,7 @@ public class SistemaArquivos {
             Inflater inflater = new Inflater();
             inflater.setInput(entrada);
 
+            // Cria um array de bytes dinamico
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream(entrada.length);
             byte[] buffer = new byte[1024];
 
