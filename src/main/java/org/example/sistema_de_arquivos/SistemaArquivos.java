@@ -1241,7 +1241,7 @@ public class SistemaArquivos {
             Inflater inflater = new Inflater();
             inflater.setInput(entrada);
 
-            // Cria um array de bytes dinamico
+            // Cria um array de bytes dinâmicos
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream(entrada.length);
             byte[] buffer = new byte[1024];
 
